@@ -1,7 +1,9 @@
 apply plugin: 'java'
+apply plugin:'application'
 
 sourceCompatibility = '1.7'
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+mainClassName = 'jsr223.powershell.Main'
 
 // NetBeans will automatically add "run" and "debug" tasks relying on the
 // "mainClass" property. You may however define the property prior executing
@@ -11,7 +13,7 @@ sourceCompatibility = '1.7'
 // prefer. In this case NetBeans will not add these tasks but you may rely on
 // your own implementation.
 if (!hasProperty('mainClass')) {
-    ext.mainClass = 'java.jsr223.powershell'
+    ext.mainClass = 'jsr223.powershell.Main'
 }
 
 repositories {
@@ -27,4 +29,10 @@ dependencies {
     //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
     testCompile group: 'junit', name: 'junit', version: '4.10'
     compile group: 'com.google.guava', name: 'guava', version: '17.0'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'jsr223.powershell.Main'
+    }
 }

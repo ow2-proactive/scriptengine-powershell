@@ -12,14 +12,13 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 
 /**
- *
- * @author vbodnart
+ * @author Vladimir Bodnartchouk
  */
 public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
     
     private static final String NAME = "PowerShell";
     private static final String ENGINE = "PowerShell interpreter";
-    private static final String ENGINE_VERSION = "2";//new NativeShellRunner(new Cmd()).getInstalledVersion();
+    private static final String ENGINE_VERSION = "2";//$PSVersionTable.PSVersion.Minor
     private static final String LANGUAGE = "PowerShell";
     private static final String LANGUAGE_VERSION = "2";//new NativeShellRunner(new Cmd()).getMajorVersion();
     
