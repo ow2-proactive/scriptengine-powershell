@@ -1,21 +1,18 @@
 package jsr223.powershell;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.StringReader;
+import java.io.StringWriter;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.Writer;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.nio.channels.Channel;
-import javax.script.ScriptEngine;
 import org.junit.Assert;
 import static org.junit.Assume.assumeTrue;
 
 public class PowerShellScriptEngineTest {
 
     private PowerShellScriptEngine scriptEngine;
+    private StringWriter scriptOutput;
+    private StringWriter scriptError;
 
     @Before
     public void runOnlyOnWindows() {
@@ -24,7 +21,11 @@ public class PowerShellScriptEngineTest {
 
     @Before
     public void setup() {
-        scriptEngine = new PowerShellScriptEngine();       
+        scriptEngine = new PowerShellScriptEngine();
+        scriptOutput = new StringWriter();
+        scriptEngine.getContext().setWriter(scriptOutput);
+        scriptError = new StringWriter();
+        scriptEngine.getContext().setErrorWriter(scriptError);
     }
 
     @Test
@@ -45,6 +46,13 @@ public class PowerShellScriptEngineTest {
         scriptEngine.put("integerVar", 42);
         scriptEngine.put("floatVar", 42.0);
         int res = (Integer) scriptEngine.eval("exit $env:stringVar.CompareTo('aString') + $env:integerVar.CompareTo('42') + $env:floatVar.CompareTo('42.0')");
+        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    }
+    
+    @Test
+    public void testEvalReader() throws Exception {
+        StringReader sr = new StringReader("Write-Output 'Hello World'");
+        int res = (Integer) scriptEngine.eval(sr);
         Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
     }
 }
