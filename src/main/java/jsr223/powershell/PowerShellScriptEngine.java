@@ -5,6 +5,8 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Collection;
+import java.util.Map;
 import javax.script.AbstractScriptEngine;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
@@ -12,80 +14,45 @@ import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 
-public class PowerShellScriptEngine extends AbstractScriptEngine{
+public class PowerShellScriptEngine extends AbstractScriptEngine{        
     
     public static String PSHELL_PATH = "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\PowerShell.exe";
     public static String WINDOW_STYLE = "Hidden";
     public static String EXEC_POLICY = "RemoteSigned";//"Unrestricted";    
+    
+    public static int OK_EXIT_CODE = 0;
 
     @Override
     public Object eval(String script, ScriptContext context) throws ScriptException {
         
-        System.out.println("--> Running " + script);
         // dump string into a file
         // start powershell process with security that allows running scripts
         // redirect output
-        // get result
-        File tempDir = new File(System.getProperty("java.io.tmpdir"),"powershell-jsr223");
-        tempDir.deleteOnExit();
-        if (!tempDir.exists()) {
-            tempDir.mkdir();
-        }        
+        // get result       
         
-        String scriptName = (String)context.getAttribute("scriptName");
-        if (scriptName == null) {
-            scriptName = "pshellScript";
-        }
+        File scriptFile = this.dumpScript(script, context);
         
-        File scriptFile = new File(scriptName);
-        scriptFile.deleteOnExit();
-        if (!scriptFile.exists()) {
-            try {            
-                scriptFile.createNewFile();
-            } catch (IOException e) {
-                throw new ScriptException(e);
-            }
-        }
-
-        try {
-            Files.write( script, scriptFile , Charsets.UTF_8 );
-        } catch( IOException e ) {
-            throw new ScriptException(e);
-        }
-        
-        //int exitValue = run(commandAsTemporaryFile, context);
-        //commandAsTemporaryFile.delete();
-        
-        ProcessBuilder b = new ProcessBuilder();
+        ProcessBuilder b = new ProcessBuilder();        
+        b = b.inheritIO();
+        addBindingsAsEnvironmentVariables(context, b);
+        //b.redirectErrorStream(true);
         b.command(PSHELL_PATH, 
                 "-WindowStyle", WINDOW_STYLE,
                 "-ExecutionPolicy", EXEC_POLICY,
                 "-NoLogo", 
                 "-File", scriptFile.getAbsolutePath());
-        
-        //b.redirectError(ProcessBuilder.Redirect.)
         try {
             final Process process = b.start();
-            
-            //Thread output = readProcessOutput(process.getInputStream(), processOutput);
-            //Thread error = readProcessOutput(process.getErrorStream(), processError);
-
-            //output.start();
-            //error.start();
-
             process.waitFor();
-            //output.join();
-            //error.join();
-            System.out.println("--------->< OK");
-            return process.exitValue();
+            return process.exitValue();            
         } catch (IOException | InterruptedException e) {
             throw new ScriptException(e);
-        }        
+        }
     }
 
     @Override
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new ScriptException("Not supported yet."); 
     }
 
     @Override
@@ -97,4 +64,69 @@ public class PowerShellScriptEngine extends AbstractScriptEngine{
     public ScriptEngineFactory getFactory() {
         return new PowerShellScriptEngineFactory();
     }
+    
+    private File dumpScript(String script, ScriptContext context) throws ScriptException {
+        File tempDir = new File(System.getProperty("java.io.tmpdir"),"powershell-jsr223");
+        tempDir.deleteOnExit();
+        if (!tempDir.exists()) {
+            tempDir.mkdir();
+        }        
+        
+        String scriptName = (String)context.getAttribute("scriptName");
+        if (scriptName == null) {
+            scriptName = "script.ps1";
+        }
+        
+        File scriptFile = new File(tempDir, scriptName);
+        scriptFile.deleteOnExit();
+        if (!scriptFile.exists()) {
+            try {            
+                scriptFile.createNewFile();
+            } catch (IOException e) {
+                throw new ScriptException(e);
+            }
+        }
+
+        try {
+            Files.write( script, scriptFile, Charsets.UTF_8);
+        } catch( IOException e ) {
+            throw new ScriptException(e);
+        }
+        return scriptFile;
+    }
+    
+    private void addBindingsAsEnvironmentVariables(ScriptContext scriptContext, ProcessBuilder processBuilder) {
+        Map<String, String> environment = processBuilder.environment();
+        for (Map.Entry<String, Object> binding : scriptContext.getBindings(ScriptContext.ENGINE_SCOPE).entrySet()) {
+            String bindingKey = binding.getKey();
+            Object bindingValue = binding.getValue();
+
+            if (bindingValue instanceof Object[]) {
+                addArrayBindingAsEnvironmentVariable(bindingKey, (Object[]) bindingValue, environment);
+            } else if (bindingValue instanceof Collection) {
+                addCollectionBindingAsEnvironmentVariable(bindingKey, (Collection) bindingValue, environment);
+            } else if (bindingValue instanceof Map) {
+                addMapBindingAsEnvironmentVariable(bindingKey, (Map<?, ?>) bindingValue, environment);
+            } else {
+                environment.put(bindingKey, bindingValue.toString());
+            }
+        }
+    }
+
+    private void addMapBindingAsEnvironmentVariable(String bindingKey, Map<?, ?> bindingValue, Map<String, String> environment) {
+        for (Map.Entry<?, ?> entry : ((Map<?, ?>) bindingValue).entrySet()) {
+            environment.put(bindingKey + "_" + entry.getKey(), (entry.getValue() == null ? "" : entry.getValue().toString()));
+        }
+    }
+
+    private void addCollectionBindingAsEnvironmentVariable(String bindingKey, Collection bindingValue, Map<String, String> environment) {
+        Object[] bindingValueAsArray = bindingValue.toArray();
+        addArrayBindingAsEnvironmentVariable(bindingKey, bindingValueAsArray, environment);
+    }
+
+    private void addArrayBindingAsEnvironmentVariable(String bindingKey, Object[] bindingValue, Map<String, String> environment) {
+        for (int i = 0; i < bindingValue.length; i++) {
+            environment.put(bindingKey + "_" + i, (bindingValue[i] == null ? "" : bindingValue[i].toString()));
+        }
+    }    
 }
