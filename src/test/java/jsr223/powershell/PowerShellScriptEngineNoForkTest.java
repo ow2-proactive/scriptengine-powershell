@@ -7,20 +7,18 @@ import org.junit.Test;
 
 import org.junit.Assert;
 import static org.junit.Assume.assumeTrue;
+import org.junit.BeforeClass;
 
 public class PowerShellScriptEngineNoForkTest {
 
-    private PowerShellScriptEngineNoFork scriptEngine;
-    private StringWriter scriptOutput;
-    private StringWriter scriptError;
+    private static PowerShellScriptEngineNoFork scriptEngine;
+    private static StringWriter scriptOutput;
+    private static StringWriter scriptError;
 
-    @Before
-    public void runOnlyOnWindows() {
+
+    @BeforeClass
+    public static void setup() {
         assumeTrue(System.getProperty("os.name").contains("Windows"));
-    }
-
-    @Before
-    public void setup() {
         scriptEngine = new PowerShellScriptEngineNoFork();
         scriptOutput = new StringWriter();
         scriptEngine.getContext().setWriter(scriptOutput);
@@ -31,6 +29,30 @@ public class PowerShellScriptEngineNoForkTest {
     @Test
     public void evalHello() throws Exception {
         int res = (Integer) scriptEngine.eval("Write-Output 'hellooooo'");
+        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    }
+    
+    @Test
+    public void testWriteError() throws Exception {
+        String errorMessage = "Halt!";
+        int res = (Integer) scriptEngine.eval("Write-Error " + errorMessage);
+        Assert.assertTrue("Script error output should contain the messages written by Write-Error cmdlet", scriptError.toString().contains(errorMessage));
+        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    }
+    
+    @Test
+    public void testWriteVerbose() throws Exception {
+        String verboseMessage = "Blabla!";
+        int res = (Integer) scriptEngine.eval("Write-Verbose " + verboseMessage);
+        Assert.assertTrue("Script standard output should contain the messages written by Write-Verbose cmdlet", scriptOutput.toString().contains(verboseMessage));
+        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    }
+
+    @Test
+    public void testWriteDebug() throws Exception {
+        String debugMessage = "Debug!";
+        int res = (Integer) scriptEngine.eval("Write-Debug " + debugMessage);
+        Assert.assertTrue("Script standard output should contain the messages written by Write-Debug cmdlet", scriptOutput.toString().contains(debugMessage));
         Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
     }
     

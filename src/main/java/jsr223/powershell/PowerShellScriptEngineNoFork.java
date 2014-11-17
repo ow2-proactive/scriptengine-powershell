@@ -4,9 +4,14 @@ import com.google.common.io.CharStreams;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Writer;
 import java.net.URI;
+import java.net.URL;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.script.AbstractScriptEngine;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
@@ -17,6 +22,7 @@ import net.sf.jni4net.Bridge;
 import org.objectweb.proactive.extensions.dataspaces.api.DataSpacesFileObject;
 import org.objectweb.proactive.extensions.dataspaces.vfs.adapter.VFSFileObjectAdapter;
 import system.Type;
+import system.collections.IList;
 import system.reflection.Assembly;
 
 public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
@@ -27,6 +33,19 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
 
     public static int OK_EXIT_CODE = 0;
     
+    Type[] EMPTY_TYPE_ARRAY = new Type[]{};    
+    private final HashMap<String, Type> types;
+    
+    private system.EventHandler errorHandler;
+    private system.EventHandler debugHandler;
+    private system.EventHandler verboseHandler;
+    private system.EventHandler outputHandler;
+    
+    public PowerShellScriptEngineNoFork(){
+        this.types = new HashMap<String, Type>();
+        this.init();
+    }
+    
     public void init(){
         // create bridge, with default setup
         // it will lookup jni4net.n.dll next to jni4net.j.jar 
@@ -35,29 +54,148 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
 
         try {
             Bridge.init();
+            
+            // Get directory that contains the jni4net.jar
+            URL jni4netJarURL = Bridge.class.getProtectionDomain().getCodeSource().getLocation();
+            File jni4netJarFile = new File(jni4netJarURL.toURI());            
+            File jsr223Dll = new File(jni4netJarFile.getParentFile(), "jsr223utils.dll");            
+            System.out.println("---> utils dll location " + jsr223Dll);
+            
+            // Load jsr223utils.dll and register as main assembly
+            Assembly wfAssembly = Assembly.LoadFrom(jsr223Dll.getAbsolutePath());
+            Bridge.RegisterAssembly(wfAssembly);
+            
+            // Load powershell assembly
+            Assembly smaAssembly = Assembly.LoadWithPartialName("System.Management.Automation");
+
+            // Load all required standard and utils types
+            types.put("PowerShellStreamsHandlerAdder", wfAssembly.GetType("utils.PowerShellStreamsHandlerAdder"));            
+            types.put("Int32", Type.GetType("System.Int32"));
+            types.put("String",  Type.GetType("System.String"));
+            types.put("PowerShell",  smaAssembly.GetType("System.Management.Automation.PowerShell"));
+            types.put("PSDataStreams",  smaAssembly.GetType("System.Management.Automation.PSDataStreams"));
+            types.put("DataAddedEventArgs",  smaAssembly.GetType("System.Management.Automation.DataAddedEventArgs"));
+            
+            this.errorHandler = new system.EventHandler() {
+
+                public void Invoke(system.Object sender, system.EventArgs e) {                                        
+                    Writer errorOutput = PowerShellScriptEngineNoFork.this.getContext().getErrorWriter();
+                    String errorMessage = null;
+                    try {
+                        IList ll = Bridge.cast(sender, system.collections.IList.class);
+                        system.Object value = ll.getItem(0);                        
+                        errorMessage = value.toString();                        
+                        ll.RemoveAt(0);
+                    } catch (Exception ex) {
+                        errorMessage = ex.getMessage();
+                    } finally {
+                        try {
+                           errorOutput.append(errorMessage);
+                       } catch (IOException ex) {                          
+                       }   
+                    }   
+                }
+            };
+            
+            this.debugHandler = new system.EventHandler() {
+
+                public void Invoke(system.Object sender, system.EventArgs e) {
+                    Writer debugOutput = PowerShellScriptEngineNoFork.this.getContext().getWriter();
+                    String debugMessage = null;
+                    try {
+                        IList ll = Bridge.cast(sender, system.collections.IList.class);
+                        system.Object value = ll.getItem(0);                        
+                        debugMessage = value.toString();                        
+                        ll.RemoveAt(0);
+                    } catch (Exception ex) {
+                        debugMessage = ex.getMessage();
+                    } finally {
+                        try {
+                           debugOutput.append(debugMessage);
+                       } catch (IOException ex) {                          
+                       }   
+                    }
+                }
+            };
+                        
+            this.verboseHandler = new system.EventHandler() {
+
+                public void Invoke(system.Object sender, system.EventArgs e) {
+
+                    System.out.println("-----------------> verbose:  " + sender + " " + e);
+                    try {
+                        IList ll = Bridge.cast(sender, system.collections.IList.class);
+                        for (int i = 0; i < ll.getCount(); i++) {
+                            System.out.println("on a  ---> " + ll.getItem(i));
+                            ll.RemoveAt(i);
+                        }
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            };
+                                    
+            this.outputHandler = new system.EventHandler() {
+
+                public void Invoke(system.Object sender, system.EventArgs e) {
+
+                    System.out.println("-----------------> output:  " + sender + " " + e);
+                    try {
+                        IList ll = Bridge.cast(sender, system.collections.IList.class);
+                        for (int i = 0; i < ll.getCount(); i++) {
+                            System.out.println("on a  ---> " + ll.getItem(i));
+                            ll.RemoveAt(i);
+                        }
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            };
+
         } catch (Exception ex) {
-            throw new RuntimeException("Unable to initialize the jn4net Bridge", ex);
-        }
-        
-        // From System
-        Type[] EMPTY_TYPE_ARRAY = new Type[]{};
-//        Type Int32Type = Type.GetType("System.Int32");
-        Type StringType = Type.GetType("System.String");
-        
-        Assembly smaAssembly = Assembly.LoadWithPartialName("System.Management.Automation");
-        final Type PowerShellType = smaAssembly.GetType("System.Management.Automation.PowerShell");
-        final Type PSDataStreamsType = smaAssembly.GetType("System.Management.Automation.PSDataStreams");
-        final Type DataAddedEventArgsType = smaAssembly.GetType("System.Management.Automation.DataAddedEventArgs");
+            throw new IllegalStateException("Unable to initialize the jn4net Bridge", ex);
+        }               
     }
-    
 
     @Override
-    public Object eval(String script, ScriptContext context) throws ScriptException {
+    public Object eval(String script, ScriptContext context) throws ScriptException {                
+        system.Object pslInstance = null;
+        try {
+            // Create new instance of PowerShell
+            long s = System.currentTimeMillis();
+            pslInstance = types.get("PowerShell").GetMethod("Create", EMPTY_TYPE_ARRAY).Invoke(null, null);
+            System.out.println("---> Created new instance of PowerShell in " + (System.currentTimeMillis() - s));
 
-        
-        
-        return null;
-     
+            // Add handlers
+            types.get("PowerShellStreamsHandlerAdder").GetMethod("AddErrorHandler").Invoke(null, new system.Object[]{pslInstance, this.errorHandler});
+            types.get("PowerShellStreamsHandlerAdder").GetMethod("AddDebugHandler").Invoke(null, new system.Object[]{pslInstance, this.debugHandler});
+            types.get("PowerShellStreamsHandlerAdder").GetMethod("AddVerboseHandler").Invoke(null, new system.Object[]{pslInstance, this.verboseHandler});
+
+            // Add script to run
+            system.String scriptS = new system.String(script);
+            types.get("PowerShell").GetMethod("AddScript", new Type[]{system.String.typeof()}).Invoke(pslInstance, new system.Object[]{scriptS});
+
+            // Run script asynchronously
+            system.IAsyncResult result = (system.IAsyncResult) types.get("PowerShell").GetMethod("BeginInvoke", EMPTY_TYPE_ARRAY).Invoke(pslInstance, null);
+
+            // Wait until
+            while (!result.isCompleted()) {
+                System.out.println("---------> waiting for script to finish ... ");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                }
+            }
+
+            System.out.println("--> disposing the PowerShellInstance");
+        } finally {
+            if (pslInstance != null) {
+                types.get("PowerShell").GetMethod("Dispose", EMPTY_TYPE_ARRAY).Invoke(pslInstance, null);
+            }
+        }
+        return 0;     
     }
 
     @Override
