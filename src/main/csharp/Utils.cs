@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
+using System.Management.Automation.Runspaces;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace utils
 {
-    class PowerShellStreamsHandlerAdder
+    class HandlerUtils
     {
         public static void AddErrorHandler(PowerShell ps, System.EventHandler errorEvt)
         {
@@ -23,5 +24,6 @@ namespace utils
         {
             ps.Streams.Verbose.DataAdded += new EventHandler<DataAddedEventArgs>(errorEvt);
         }
+
     }
 }
