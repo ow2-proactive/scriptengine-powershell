@@ -30,5 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <!-- List of CLR types which should have proxy generated -->
   <ClrType TypeName="System.EventHandler"/>
   <ClrType TypeName="System.EventArgs"/>
-  
+  <ClrType TypeName="System.IO.StringWriter"/>
+
 </jni4net-proxygen>

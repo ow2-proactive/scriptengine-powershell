@@ -30,6 +30,7 @@ public class PowerShellScriptEngineNoForkTest {
     public void evalHello() throws Exception {
         int res = (Integer) scriptEngine.eval("Write-Output 'hellooooo'");
         Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+        Assert.assertEquals("hellooooo", scriptOutput.toString());
     }
     
     @Test
@@ -45,6 +46,14 @@ public class PowerShellScriptEngineNoForkTest {
         String verboseMessage = "Blabla!";
         int res = (Integer) scriptEngine.eval("Write-Verbose " + verboseMessage);
         Assert.assertTrue("Script standard output should contain the messages written by Write-Verbose cmdlet", scriptOutput.toString().contains(verboseMessage));
+        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    }
+
+    @Test
+    public void testWritHost() throws Exception {
+        String message = "Blabla!";
+        int res = (Integer) scriptEngine.eval("Write-Host " + message);
+        Assert.assertTrue("Script standard output should contain the messages written by Write-Host cmdlet", scriptOutput.toString().contains(message));
         Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
     }
 
@@ -65,10 +74,22 @@ public class PowerShellScriptEngineNoForkTest {
     @Test
     public void testBindingString() throws Exception {
         scriptEngine.put("stringVar", "aString");        
-        scriptEngine.put("integerVar", 42);
-        scriptEngine.put("floatVar", 42.0);
-        int res = (Integer) scriptEngine.eval("exit $env:stringVar.CompareTo('aString') + $env:integerVar.CompareTo('42') + $env:floatVar.CompareTo('42.0')");
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+        Object res = scriptEngine.eval("Write-Output $stringVar"); // + $env:integerVar.CompareTo(42) + $env:floatVar.CompareTo(42.0)");
+        Assert.assertEquals("aString", res.toString());
+    }
+
+    @Test
+    public void testBindingStringWithReturn() throws Exception {
+        scriptEngine.put("stringVar", "aString");
+        Object res = scriptEngine.eval("return $stringVar"); // + $env:integerVar.CompareTo(42) + $env:floatVar.CompareTo(42.0)");
+        Assert.assertEquals("aString", res.toString());
+    }
+
+    @Test
+    public void testBindingStringWithReturnInt() throws Exception {
+        scriptEngine.put("intVar", 42);
+        Object res = scriptEngine.eval("return $intVar"); // + $env:integerVar.CompareTo(42) + $env:floatVar.CompareTo(42.0)");
+        Assert.assertEquals(42, res);
     }
     
     @Test

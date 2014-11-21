@@ -18,10 +18,15 @@ import javax.script.SimpleBindings;
 import net.sf.jni4net.Bridge;
 import org.objectweb.proactive.extensions.dataspaces.api.DataSpacesFileObject;
 import org.objectweb.proactive.extensions.dataspaces.vfs.adapter.VFSFileObjectAdapter;
+import system.Console;
 import system.EventHandler;
 import system.IAsyncResult;
 import system.Type;
+import system.collections.IEnumerable;
+import system.collections.IEnumerator;
 import system.collections.IList;
+import system.io.StringWriter;
+import system.io.TextWriter;
 import system.reflection.Assembly;
 import system.reflection.MethodInfo;
 
@@ -129,6 +134,8 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
         try {
             // Create new instance of PowerShell
             long s = System.currentTimeMillis();
+            StringWriter textWriter = new StringWriter();
+            Console.SetOut(textWriter);
             ps = psCaller.createNewPowerShellInstance();
             System.out.println(" --> " + ps);
             System.out.println("---> Created new instance of PowerShell in " + (System.currentTimeMillis() - s));
@@ -136,16 +143,22 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
             // Add handlers
             psCaller.addHandlers(ps, this.errorHandler, this.debugHandler, this.verboseHandler);
 
-            // Add variables from context            
+            // Add variables from context
+            for (Map.Entry<String, Object> binding : context.getBindings(ScriptContext.ENGINE_SCOPE).entrySet()) {
+                String bindingKey = binding.getKey();
+                Object bindingValue = binding.getValue();
+                psCaller.setVariable(ps, bindingKey, bindingValue);
+            }
             //PowerShellInstance.AddCommand("set-variable").AddArgument("toto").AddArgument(i);
             // Add script to run
             psCaller.addScript(ps, script);
 
             // Run script asynchronously
-            IAsyncResult result = psCaller.runAsynchronously(ps);
+            IAsyncResult asyncResult = psCaller.runAsynchronously(ps);
 
             // Wait until
-            while (!result.isCompleted()) {
+            Object result = null;
+            while (!asyncResult.isCompleted()) {
                 System.out.println("---------> waiting for script to finish ... ");
                 try {
                     Thread.sleep(1000);
@@ -153,13 +166,24 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
                 }
             }
 
+            IEnumerator res = psCaller.res(ps, asyncResult).GetEnumerator();
+            while (res.MoveNext()) {
+                Object nextElement =  res.getCurrent();
+                System.out.println(nextElement);
+            }
+
+            System.out.println("Outout console " + textWriter.toString());
+
+            System.out.println(res);
+
             System.out.println("--> disposing the PowerShellInstance");
+            return result;
         } finally {
             if (ps != null) {
                 psCaller.dispose(ps);
             }
         }
-        return 0;
+        //return null;
     }
 
     @Override
@@ -309,10 +333,20 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
 
         private void addScript(system.Object psInstance, String script) {
             PowerShell.GetMethod("AddScript", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String(script)});
-        }        
+        }
+
+        private void setVariable(system.Object psInstance, String variableName, Object variableValue) {
+            PowerShell.GetMethod("AddCommand", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String("set-variable")});
+            PowerShell.GetMethod("AddArgument", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String(variableName)});
+            PowerShell.GetMethod("AddArgument").Invoke(psInstance, new system.Object[]{Bridge.wrapJVM(variableValue)});
+        }
 
         private IAsyncResult runAsynchronously(system.Object psInstance) {
             return (IAsyncResult) PowerShell.GetMethod("BeginInvoke", EMPTY_TYPE_ARRAY).Invoke(psInstance, null);
+        }
+
+        private IEnumerable res(system.Object psInstance, IAsyncResult res) {
+            return (IEnumerable) PowerShell.GetMethod("EndInvoke").Invoke(psInstance,new  system.Object[]{(system.Object)res});
         }
         
         private void dispose(system.Object pslInstance) {
