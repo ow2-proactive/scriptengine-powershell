@@ -6,16 +6,17 @@
 package jsr223.powershell;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.Arrays;
-import java.util.List;
+
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Vladimir Bodnartchouk
  */
 public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
-    
+
     private static final String NAME = "PowerShell";
     private static final String ENGINE = "PowerShell interpreter";
     private static final String ENGINE_VERSION = "2";//$PSVersionTable.PSVersion.Minor
@@ -81,7 +82,7 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public String getOutputStatement(String toDisplay) {
-        return "Write-Output " + toDisplay;
+        return "Write-Host " + toDisplay;
     }
 
     @Override

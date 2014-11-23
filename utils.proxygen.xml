@@ -26,10 +26,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- List of assemblies, which define known types for generator -->
   <AssemblyReference Assembly="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"/>  
+  <AssemblyReference Assembly="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"/>
+  <!--<AssemblyReference Assembly="tools/jsr223utils.dll"/>-->
 
   <!-- List of CLR types which should have proxy generated -->
   <ClrType TypeName="System.EventHandler"/>
   <ClrType TypeName="System.EventArgs"/>
+  <!--<ClrType TypeName="System.Boolean"/>-->
+  <!--<ClrType TypeName="System.Byte"/>-->
+  <!--<ClrType TypeName="System.Double"/>-->
+  <!--<ClrType TypeName="System.Single"/>-->
+  <!--<ClrType TypeName="System.Int32"/>-->
+  <!--<ClrType TypeName="System.Int64"/>-->
+  <!--<ClrType TypeName="System.Int16"/>-->
+  <!--<ClrType TypeName="System.Char"/>-->
+  <!--<ClrType TypeName="System.UInt32"/>-->
+  <!--<ClrType TypeName="System.UInt64"/>-->
+  <!--<ClrType TypeName="System.UInt16"/>-->
+  <!--<ClrType TypeName="System.SByte"/>-->
+  <ClrType TypeName="System.Collections.ArrayList"/>
+  <ClrType TypeName="System.Collections.Hashtable"/>
   <ClrType TypeName="System.IO.StringWriter"/>
+  <!--<ClrType TypeName="utils.PSUtils"/>-->
+  <ClrType TypeName="System.Management.Automation.PSObject"/>
 
 </jni4net-proxygen>

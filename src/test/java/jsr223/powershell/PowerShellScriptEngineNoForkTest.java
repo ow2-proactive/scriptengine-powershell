@@ -1,20 +1,21 @@
 package jsr223.powershell;
 
-import java.io.StringReader;
-import java.io.StringWriter;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.junit.Assert;
+import javax.script.ScriptException;
+import java.io.StringReader;
+import java.io.StringWriter;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import org.junit.BeforeClass;
 
 public class PowerShellScriptEngineNoForkTest {
 
     private static PowerShellScriptEngineNoFork scriptEngine;
     private static StringWriter scriptOutput;
     private static StringWriter scriptError;
-
 
     @BeforeClass
     public static void setup() {
@@ -27,75 +28,58 @@ public class PowerShellScriptEngineNoForkTest {
     }
 
     @Test
-    public void evalHello() throws Exception {
-        int res = (Integer) scriptEngine.eval("Write-Output 'hellooooo'");
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
-        Assert.assertEquals("hellooooo", scriptOutput.toString());
+    public void evalWorkingScript() throws Exception {
+        String result = (String) scriptEngine.eval("Write-Output 'hello'");
+        assertEquals("hello", result);
     }
-    
+
     @Test
-    public void testWriteError() throws Exception {
-        String errorMessage = "Halt!";
-        int res = (Integer) scriptEngine.eval("Write-Error " + errorMessage);
-        Assert.assertTrue("Script error output should contain the messages written by Write-Error cmdlet", scriptError.toString().contains(errorMessage));
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    public void emptyScript() throws Exception {
+        assertEquals(null, scriptEngine.eval(""));
     }
-    
+
+    @Test(expected = ScriptException.class)
+    public void invalidScript() throws Exception {
+        scriptEngine.eval("Write-Output2 'hello'");
+    }
+
+    @Test(expected = ScriptException.class)
+    public void testWriteError() throws Exception {
+        scriptEngine.eval("Write-Error 'hello'");
+    }
+
     @Test
     public void testWriteVerbose() throws Exception {
         String verboseMessage = "Blabla!";
         int res = (Integer) scriptEngine.eval("Write-Verbose " + verboseMessage);
-        Assert.assertTrue("Script standard output should contain the messages written by Write-Verbose cmdlet", scriptOutput.toString().contains(verboseMessage));
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+        assertTrue("Script standard output should contain the messages written by Write-Verbose cmdlet", scriptOutput.toString().contains(verboseMessage));
+        assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
     }
 
     @Test
     public void testWritHost() throws Exception {
         String message = "Blabla!";
         int res = (Integer) scriptEngine.eval("Write-Host " + message);
-        Assert.assertTrue("Script standard output should contain the messages written by Write-Host cmdlet", scriptOutput.toString().contains(message));
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+        assertTrue("Script standard output should contain the messages written by Write-Host cmdlet", scriptOutput.toString().contains(message));
+        assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
     }
 
     @Test
     public void testWriteDebug() throws Exception {
         String debugMessage = "Debug!";
         int res = (Integer) scriptEngine.eval("Write-Debug " + debugMessage);
-        Assert.assertTrue("Script standard output should contain the messages written by Write-Debug cmdlet", scriptOutput.toString().contains(debugMessage));
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
-    }
-    
-    @Test
-    public void testExitCode() throws Exception {
-        int res = (Integer) scriptEngine.eval("exit 123");
-        Assert.assertEquals(123, res);
-    }        
-    
-    @Test
-    public void testBindingString() throws Exception {
-        scriptEngine.put("stringVar", "aString");        
-        Object res = scriptEngine.eval("Write-Output $stringVar"); // + $env:integerVar.CompareTo(42) + $env:floatVar.CompareTo(42.0)");
-        Assert.assertEquals("aString", res.toString());
+        assertTrue("Script standard output should contain the messages written by Write-Debug cmdlet", scriptOutput.toString().contains(debugMessage));
+        assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
     }
 
     @Test
-    public void testBindingStringWithReturn() throws Exception {
-        scriptEngine.put("stringVar", "aString");
-        Object res = scriptEngine.eval("return $stringVar"); // + $env:integerVar.CompareTo(42) + $env:floatVar.CompareTo(42.0)");
-        Assert.assertEquals("aString", res.toString());
+    public void exitCodeIsNotHandledUseErrors() throws Exception {
+        assertEquals(null, scriptEngine.eval("exit 123"));
     }
 
-    @Test
-    public void testBindingStringWithReturnInt() throws Exception {
-        scriptEngine.put("intVar", 42);
-        Object res = scriptEngine.eval("return $intVar"); // + $env:integerVar.CompareTo(42) + $env:floatVar.CompareTo(42.0)");
-        Assert.assertEquals(42, res);
-    }
-    
     @Test
     public void testEvalReader() throws Exception {
-        StringReader sr = new StringReader("Write-Output 'Hello World'");
-        int res = (Integer) scriptEngine.eval(sr);
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+        StringReader sr = new StringReader("Write-Output 'hello'");
+        assertEquals("hello", scriptEngine.eval(sr));
     }
 }

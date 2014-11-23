@@ -1,3 +1,8 @@
+Supported types
+
+! char => string (variable)
+
+
 Utils to generate jni4net code for System.EventHandler
 ---
 

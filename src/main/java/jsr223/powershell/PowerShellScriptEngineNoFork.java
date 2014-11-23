@@ -1,49 +1,43 @@
 package jsr223.powershell;
 
 import com.google.common.io.CharStreams;
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.URI;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Map;
+import net.sf.jni4net.Bridge;
+import system.Decimal;
+import system.EventHandler;
+import system.Type;
+import system.ValueType;
+import system.collections.IDictionary;
+import system.collections.IDictionaryEnumerator;
+import system.collections.IEnumerable;
+import system.collections.IEnumerator;
+import system.collections.IList;
+import system.reflection.Assembly;
+import system.reflection.MethodInfo;
+
 import javax.script.AbstractScriptEngine;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
-import net.sf.jni4net.Bridge;
-import org.objectweb.proactive.extensions.dataspaces.api.DataSpacesFileObject;
-import org.objectweb.proactive.extensions.dataspaces.vfs.adapter.VFSFileObjectAdapter;
-import system.Console;
-import system.EventHandler;
-import system.IAsyncResult;
-import system.Type;
-import system.collections.IEnumerable;
-import system.collections.IEnumerator;
-import system.collections.IList;
-import system.io.StringWriter;
-import system.io.TextWriter;
-import system.reflection.Assembly;
-import system.reflection.MethodInfo;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
 
-    public static String PSHELL_PATH = "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\PowerShell.exe";
-    public static String WINDOW_STYLE = "Hidden";
-    public static String EXEC_POLICY = "RemoteSigned";//"Unrestricted";    
-
-    public static int OK_EXIT_CODE = 0;
-
     private final PowerShellCachedCaller psCaller;
 
-    private final EventHandler errorHandler;
+    private EventHandler errorHandler;
     private final EventHandler debugHandler;
     private final EventHandler verboseHandler;
-    private final EventHandler outputHandler;
 
     public PowerShellScriptEngineNoFork() {
         File jsr223dll = this.initAndFindDll();
@@ -109,81 +103,154 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
             }
         };
 
-        this.outputHandler = new system.EventHandler() {
-
-            public void Invoke(system.Object sender, system.EventArgs e) {
-
-                System.out.println("-----------------> output:  " + sender + " " + e);
-                try {
-                    IList ll = Bridge.cast(sender, system.collections.IList.class);
-                    for (int i = 0; i < ll.getCount(); i++) {
-                        System.out.println("on a  ---> " + ll.getItem(i));
-                        ll.RemoveAt(i);
-                    }
-
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        };
     }
 
     @Override
     public Object eval(String script, ScriptContext context) throws ScriptException {
         system.Object ps = null;
         try {
-            // Create new instance of PowerShell
-            long s = System.currentTimeMillis();
-            StringWriter textWriter = new StringWriter();
-            Console.SetOut(textWriter);
             ps = psCaller.createNewPowerShellInstance();
-            System.out.println(" --> " + ps);
-            System.out.println("---> Created new instance of PowerShell in " + (System.currentTimeMillis() - s));
+
+            final ScriptException[] error = {null};
+            this.errorHandler = new system.EventHandler() {
+
+                public void Invoke(system.Object sender, system.EventArgs e) {
+                    Writer errorOutput = PowerShellScriptEngineNoFork.this.getContext().getErrorWriter();
+                    String errorMessage = null;
+                    try {
+                        IList ll = Bridge.cast(sender, system.collections.IList.class);
+                        system.Object value = ll.getItem(0);
+                        errorMessage = value.toString();
+                        error[0] = new ScriptException(errorMessage);
+                        ll.RemoveAt(0);
+                    } catch (Exception ex) {
+                        errorMessage = ex.getMessage();
+                    } finally {
+                        try {
+                            errorOutput.append(errorMessage);
+                        } catch (IOException ex) {
+                        }
+                    }
+                }
+            };
 
             // Add handlers
             psCaller.addHandlers(ps, this.errorHandler, this.debugHandler, this.verboseHandler);
 
             // Add variables from context
-            for (Map.Entry<String, Object> binding : context.getBindings(ScriptContext.ENGINE_SCOPE).entrySet()) {
+            for (Map.Entry<String, java.lang.Object> binding : context.getBindings(ScriptContext.ENGINE_SCOPE).entrySet()) {
                 String bindingKey = binding.getKey();
                 Object bindingValue = binding.getValue();
-                psCaller.setVariable(ps, bindingKey, bindingValue);
+                psCaller.setVariable(ps, bindingKey, convertJavaObjectToCSharpObject(bindingValue));
             }
-            //PowerShellInstance.AddCommand("set-variable").AddArgument("toto").AddArgument(i);
             // Add script to run
             psCaller.addScript(ps, script);
 
-            // Run script asynchronously
-            IAsyncResult asyncResult = psCaller.runAsynchronously(ps);
+            system.Object scriptResults = psCaller.invoke(ps);
 
-            // Wait until
-            Object result = null;
-            while (!asyncResult.isCompleted()) {
-                System.out.println("---------> waiting for script to finish ... ");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex) {
-                }
+            List<Object> resultAsList = new ArrayList<>();
+            IEnumerator scriptResultsEnumerator = ((IEnumerable) scriptResults).GetEnumerator();
+            while (scriptResultsEnumerator.MoveNext()) {
+                system.management.automation.PSObject scriptResult = (system.management.automation.PSObject) scriptResultsEnumerator.getCurrent();
+                system.Object scriptResultObject = scriptResult.getBaseObject();
+                Object javaScriptResult = convertCSharpObjectToJavaObject(scriptResultObject);
+                resultAsList.add(javaScriptResult);
             }
 
-            IEnumerator res = psCaller.res(ps, asyncResult).GetEnumerator();
-            while (res.MoveNext()) {
-                Object nextElement =  res.getCurrent();
-                System.out.println(nextElement);
+            if (error[0] != null) {
+                throw error[0];
             }
 
-            System.out.println("Outout console " + textWriter.toString());
-
-            System.out.println(res);
-
-            System.out.println("--> disposing the PowerShellInstance");
-            return result;
+            if (resultAsList.isEmpty()) {
+                return null;
+            } else if (resultAsList.size() == 1) {
+                return resultAsList.get(0);
+            } else {
+                return resultAsList;
+            }
         } finally {
             if (ps != null) {
                 psCaller.dispose(ps);
             }
         }
-        //return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private system.Object convertJavaObjectToCSharpObject(java.lang.Object bindingValue) {
+        if (bindingValue instanceof String) {
+            return new system.String((String) bindingValue);
+        } else if (bindingValue instanceof Integer) {
+            return psCaller.toInt(bindingValue.toString());
+        } else if (bindingValue instanceof Long) {
+            return psCaller.toLong(bindingValue.toString());
+        } else if (bindingValue instanceof Double) {
+            return psCaller.toDouble(bindingValue.toString());
+        } else if (bindingValue instanceof Byte) {
+            return psCaller.toByte(bindingValue.toString());
+        } else if (bindingValue instanceof Character) {
+            return psCaller.toChar(bindingValue.toString());
+        } else if (bindingValue instanceof Boolean) {
+            return psCaller.toBool(bindingValue.toString());
+        } else if (bindingValue instanceof List) {
+            system.collections.ArrayList cSharpList = new system.collections.ArrayList();
+            for (Object entry : (List) bindingValue) {
+                cSharpList.Add(convertJavaObjectToCSharpObject(entry));
+            }
+            return cSharpList;
+        } else if (bindingValue instanceof Map) {
+            system.collections.Hashtable cSharpMap = new system.collections.Hashtable();
+            for (Map.Entry entry : (Set<Map.Entry>) ((Map) bindingValue).entrySet()) {
+                cSharpMap.Add(new system.String(entry.getKey().toString()), convertJavaObjectToCSharpObject(entry.getValue()));
+            }
+            return cSharpMap;
+        }
+        return null;
+    }
+
+    private java.lang.Object convertCSharpObjectToJavaObject(system.Object scriptResultObject) {
+        if (scriptResultObject instanceof Decimal) {
+            Decimal decimal = (Decimal) scriptResultObject;
+            return Decimal.ToInt32(decimal);
+        } else if (scriptResultObject instanceof system.String) {
+            system.String asString = (system.String) scriptResultObject;
+            return asString.ToString();
+        } else if (scriptResultObject instanceof ValueType) {
+            ValueType scriptResultValue = (ValueType) scriptResultObject;
+            if (scriptResultValue.GetType().getName().equals("Int32")) {
+                return Integer.parseInt(scriptResultValue.ToString());
+            } else if (scriptResultValue.GetType().getName().equals("Int64")) {
+                return Long.parseLong(scriptResultObject.toString());
+            } else if (scriptResultValue.GetType().getName().equals("Double")) {
+                return Double.parseDouble(scriptResultObject.toString());
+            } else if (scriptResultValue.GetType().getName().equals("Byte")) {
+                return Byte.parseByte(scriptResultValue.toString());
+            } else if (scriptResultValue.GetType().getName().equals("Char")) {
+                return scriptResultValue.toString().charAt(0);
+            } else if (scriptResultValue.GetType().getName().equals("Boolean")) {
+                return Boolean.parseBoolean(scriptResultValue.toString());
+            } else {
+                return scriptResultValue.toString();
+            }
+        } else if (scriptResultObject instanceof system.collections.IList) {
+            system.collections.IList asList = ((IList) scriptResultObject);
+            List<Object> javaList = new ArrayList<>();
+            for (int i = 0; i < asList.getCount(); i++) {
+                javaList.add(convertCSharpObjectToJavaObject(asList.getItem(i)));
+            }
+            return javaList;
+        } else if (scriptResultObject instanceof IDictionary) {
+            IDictionary asMap = ((IDictionary) scriptResultObject);
+            IDictionaryEnumerator enumerator = asMap.GetEnumerator();
+            Map<String, Object> javaMap = new HashMap<>();
+            while (enumerator.MoveNext()) {
+                String key = enumerator.getKey().toString();
+                Object value = convertCSharpObjectToJavaObject(enumerator.getValue());
+                javaMap.put(key, value);
+            }
+            return javaMap;
+        } else {
+            return scriptResultObject.toString();
+        }
     }
 
     @Override
@@ -206,7 +273,7 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
     public ScriptEngineFactory getFactory() {
         return new PowerShellScriptEngineFactory();
     }
-    
+
     public File initAndFindDll() {
         try {
             // create bridge, with default setup
@@ -225,82 +292,36 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
         }
     }
 
-    private void addBindingsAsEnvironmentVariables(ScriptContext scriptContext, ProcessBuilder processBuilder) throws ScriptException {
-        Map<String, String> environment = processBuilder.environment();
-        for (Map.Entry<String, Object> binding : scriptContext.getBindings(ScriptContext.ENGINE_SCOPE).entrySet()) {
-            String bindingKey = binding.getKey();
-            Object bindingValue = binding.getValue();
-
-            if (bindingValue instanceof Object[]) {
-                addArrayBindingAsEnvironmentVariable(bindingKey, (Object[]) bindingValue, environment);
-            } else if (bindingValue instanceof Collection) {
-                addCollectionBindingAsEnvironmentVariable(bindingKey, (Collection) bindingValue, environment);
-            } else if (bindingValue instanceof Map) {
-                addMapBindingAsEnvironmentVariable(bindingKey, (Map<?, ?>) bindingValue, environment);
-            } else if (bindingValue instanceof VFSFileObjectAdapter) {
-                try {
-                    environment.put(bindingKey, convertToPath((VFSFileObjectAdapter) bindingValue).toString());
-                } catch (Exception ex) {
-                    throw new ScriptException(ex);
-                }
-            } else {
-                environment.put(bindingKey, bindingValue.toString());
-            }
-        }
-
-        // Add extra variables from scheduler
-        String pasJobId = System.getProperty("pas.job.id");
-        if (pasJobId != null) {
-            environment.put("JOB_ID", pasJobId);
-        }
-        String pasJobName = System.getProperty("pas.job.name");
-        if (pasJobName != null) {
-            environment.put("JOB_NAME", pasJobName);
-        }
-        String pasTaskId = System.getProperty("pas.task.id");
-        if (pasTaskId != null) {
-            environment.put("TASK_ID", pasTaskId);
-        }
-        String pasTaskName = System.getProperty("pas.task.name");
-        if (pasTaskName != null) {
-            environment.put("TASK_NAME", pasTaskName);
-        }
-        String pasTaskIteration = System.getProperty("pas.task.iteration");
-        if (pasTaskIteration != null) {
-            environment.put("TASK_ITERATION", pasTaskIteration);
-        }
-        String pasTaskReplication = System.getProperty("pas.task.replication");
-        if (pasTaskReplication != null) {
-            environment.put("TASK_REPLICATION", pasTaskReplication);
-        }
-    }
-
-    private void addMapBindingAsEnvironmentVariable(String bindingKey, Map<?, ?> bindingValue, Map<String, String> environment) {
-        for (Map.Entry<?, ?> entry : ((Map<?, ?>) bindingValue).entrySet()) {
-            environment.put(bindingKey + "_" + entry.getKey(), (entry.getValue() == null ? "" : entry.getValue().toString()));
-        }
-    }
-
-    private void addCollectionBindingAsEnvironmentVariable(String bindingKey, Collection bindingValue, Map<String, String> environment) {
-        Object[] bindingValueAsArray = bindingValue.toArray();
-        addArrayBindingAsEnvironmentVariable(bindingKey, bindingValueAsArray, environment);
-    }
-
-    private void addArrayBindingAsEnvironmentVariable(String bindingKey, Object[] bindingValue, Map<String, String> environment) {
-        for (int i = 0; i < bindingValue.length; i++) {
-            environment.put(bindingKey + "_" + i, (bindingValue[i] == null ? "" : bindingValue[i].toString()));
-        }
-    }
-
-    private String convertToPath(DataSpacesFileObject dsfo) throws Exception {
-        String path = dsfo.getRealURI();
-        URI uri = new URI(path);
-        File f = new File(uri);
-        return f.getCanonicalPath();
-    }
+//
+//        // Add extra variables from scheduler
+//        String pasJobId = System.getProperty("pas.job.id");
+//        if (pasJobId != null) {
+//            environment.put("JOB_ID", pasJobId);
+//        }
+//        String pasJobName = System.getProperty("pas.job.name");
+//        if (pasJobName != null) {
+//            environment.put("JOB_NAME", pasJobName);
+//        }
+//        String pasTaskId = System.getProperty("pas.task.id");
+//        if (pasTaskId != null) {
+//            environment.put("TASK_ID", pasTaskId);
+//        }
+//        String pasTaskName = System.getProperty("pas.task.name");
+//        if (pasTaskName != null) {
+//            environment.put("TASK_NAME", pasTaskName);
+//        }
+//        String pasTaskIteration = System.getProperty("pas.task.iteration");
+//        if (pasTaskIteration != null) {
+//            environment.put("TASK_ITERATION", pasTaskIteration);
+//        }
+//        String pasTaskReplication = System.getProperty("pas.task.replication");
+//        if (pasTaskReplication != null) {
+//            environment.put("TASK_REPLICATION", pasTaskReplication);
+//        }
+//    }
 
     // Load all required standard and utils types
-    // Then performs calls on .Net objects by reflection
+// Then performs calls on .Net objects by reflection
     private class PowerShellCachedCaller {
 
         final Type[] EMPTY_TYPE_ARRAY = new Type[]{};
@@ -325,32 +346,89 @@ public class PowerShellScriptEngineNoFork extends AbstractScriptEngine {
             return PowerShell.GetMethod("Create", EMPTY_TYPE_ARRAY).Invoke(null, null);
         }
 
-        private void addHandlers(system.Object pslInstance,  EventHandler err, EventHandler debug, EventHandler verbose) {
+        private void addHandlers(system.Object pslInstance, EventHandler err, EventHandler debug, EventHandler verbose) {
             HandlerUtils.GetMethod("AddErrorHandler").Invoke(null, new system.Object[]{pslInstance, err});
             HandlerUtils.GetMethod("AddDebugHandler").Invoke(null, new system.Object[]{pslInstance, debug});
             HandlerUtils.GetMethod("AddVerboseHandler").Invoke(null, new system.Object[]{pslInstance, verbose});
+        }
+
+        private system.Object toBool(String bool) {
+            return toSomething("toBool", bool);
+        }
+
+        private system.Object toInt(String bool) {
+            return toSomething("toInt", bool);
+        }
+
+        private system.Object toLong(String bool) {
+            return toSomething("toLong", bool);
+        }
+
+        private system.Object toDouble(String bool) {
+            return toSomething("toDouble", bool);
+        }
+
+        private system.Object toByte(String bool) {
+            return toSomething("toByte", bool);
+        }
+
+        private system.Object toChar(String bool) {
+            return toSomething("toChar", bool);
+        }
+
+        private system.Object toSomething(String methodName, String value) {
+            return HandlerUtils.GetMethod(methodName).Invoke(null, new system.Object[]{new system.String(value)});
         }
 
         private void addScript(system.Object psInstance, String script) {
             PowerShell.GetMethod("AddScript", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String(script)});
         }
 
-        private void setVariable(system.Object psInstance, String variableName, Object variableValue) {
+        private void setVariable(system.Object psInstance, java.lang.String variableName, system.Object variableValue) {
             PowerShell.GetMethod("AddCommand", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String("set-variable")});
             PowerShell.GetMethod("AddArgument", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String(variableName)});
-            PowerShell.GetMethod("AddArgument").Invoke(psInstance, new system.Object[]{Bridge.wrapJVM(variableValue)});
+            PowerShell.GetMethod("AddArgument").Invoke(psInstance, new system.Object[]{variableValue});
         }
 
-        private IAsyncResult runAsynchronously(system.Object psInstance) {
-            return (IAsyncResult) PowerShell.GetMethod("BeginInvoke", EMPTY_TYPE_ARRAY).Invoke(psInstance, null);
+        private system.Object invoke(system.Object psInstance) {
+
+
+            return findInvokeMethod().Invoke(psInstance, null);
         }
 
-        private IEnumerable res(system.Object psInstance, IAsyncResult res) {
-            return (IEnumerable) PowerShell.GetMethod("EndInvoke").Invoke(psInstance,new  system.Object[]{(system.Object)res});
+        private MethodInfo findInvokeMethod() {
+            for (MethodInfo methodInfo : PowerShell.GetMethods()) {
+                if (methodInfo.getName().equals("Invoke")) {
+                    if (methodInfo.getReturnType().GetGenericArguments()[0].getName().equals("PSObject")) {
+                        return methodInfo;
+                    }
+                }
+            }
+            return null;
         }
-        
+
         private void dispose(system.Object pslInstance) {
             PowerShell.GetMethod("Dispose", EMPTY_TYPE_ARRAY).Invoke(pslInstance, null);
         }
+
+
     }
+
+// return can be an an array of object, test many cases with wrapping and co
+//    [string]    Fixed-length string of Unicode characters
+//    [char]      A Unicode 16-bit character
+//    [byte]      An 8-bit unsigned character
+//
+//    [int]       32-bit signed integer
+//    [long]      64-bit signed integer
+//    [bool]      Boolean True/False value
+//
+//    [decimal]   A 128-bit decimal value
+//    [single]    Single-precision 32-bit floating point number
+//    [double]    Double-precision 64-bit floating point number
+//    [DateTime]  Date and Time
+//
+//    [xml]       Xml object
+//    [array]     An array of values
+//    [hashtable] Hashtable object
 }
