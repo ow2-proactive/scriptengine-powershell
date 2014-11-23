@@ -1,26 +1,25 @@
 package jsr223.powershell;
 
-import java.io.StringReader;
-import java.io.StringWriter;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.junit.Assert;
+import javax.script.ScriptException;
+import java.io.StringReader;
+import java.io.StringWriter;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class PowerShellScriptEngineTest {
 
-    private PowerShellScriptEngine scriptEngine;
-    private StringWriter scriptOutput;
-    private StringWriter scriptError;
+    private static PowerShellScriptEngine scriptEngine;
+    private static StringWriter scriptOutput;
+    private static StringWriter scriptError;
 
-    @Before
-    public void runOnlyOnWindows() {
+    @BeforeClass
+    public static void setup() {
         assumeTrue(System.getProperty("os.name").contains("Windows"));
-    }
-
-    @Before
-    public void setup() {
         scriptEngine = new PowerShellScriptEngine();
         scriptOutput = new StringWriter();
         scriptEngine.getContext().setWriter(scriptOutput);
@@ -29,30 +28,54 @@ public class PowerShellScriptEngineTest {
     }
 
     @Test
-    public void evalHello() throws Exception {
-        int res = (Integer) scriptEngine.eval("Write-Output 'hellooooo'");
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    public void evalWorkingScript() throws Exception {
+        String result = (String) scriptEngine.eval("Write-Output 'hello'");
+        assertEquals("hello", result);
     }
-    
+
     @Test
-    public void testExitCode() throws Exception {
-        int res = (Integer) scriptEngine.eval("exit 123");
-        Assert.assertEquals(123, res);
-    }        
-    
-    @Test
-    public void testBindingString() throws Exception {
-        scriptEngine.put("stringVar", "aString");        
-        scriptEngine.put("integerVar", 42);
-        scriptEngine.put("floatVar", 42.0);
-        int res = (Integer) scriptEngine.eval("exit $env:stringVar.CompareTo('aString') + $env:integerVar.CompareTo('42') + $env:floatVar.CompareTo('42.0')");
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+    public void emptyScript() throws Exception {
+        assertEquals(null, scriptEngine.eval(""));
     }
-    
+
+    @Test(expected = ScriptException.class)
+    public void invalidScript() throws Exception {
+        scriptEngine.eval("Write-Output2 'hello'");
+    }
+
+    @Test(expected = ScriptException.class)
+    public void testWriteError() throws Exception {
+        scriptEngine.eval("Write-Error 'hello'");
+    }
+
+    @Test
+    public void testWriteVerbose() throws Exception {
+        String verboseMessage = "Blabla!";
+        scriptEngine.eval("Write-Verbose " + verboseMessage + " -verbose");
+        assertTrue("Script standard output should contain the messages written by Write-Verbose cmdlet", scriptOutput.toString().contains(verboseMessage));
+    }
+
+    @Test(expected = ScriptException.class)
+    public void testWriteHostIsNotSupported() throws Exception {
+        String message = "Blabla!";
+        scriptEngine.eval("Write-Host " + message);
+    }
+
+    @Test
+    public void testWriteDebug() throws Exception {
+        String debugMessage = "Debug!";
+        scriptEngine.eval("Write-Debug " + debugMessage + " -debug");
+        assertTrue("Script standard output should contain the messages written by Write-Debug cmdlet", scriptOutput.toString().contains(debugMessage));
+    }
+
+    @Test
+    public void exitCodeIsNotHandledUseErrors() throws Exception {
+        assertEquals(null, scriptEngine.eval("exit 123"));
+    }
+
     @Test
     public void testEvalReader() throws Exception {
-        StringReader sr = new StringReader("Write-Output 'Hello World'");
-        int res = (Integer) scriptEngine.eval(sr);
-        Assert.assertEquals(PowerShellScriptEngine.OK_EXIT_CODE, res);
+        StringReader sr = new StringReader("Write-Output 'hello'");
+        assertEquals("hello", scriptEngine.eval(sr));
     }
 }

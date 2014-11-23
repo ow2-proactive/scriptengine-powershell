@@ -13,14 +13,14 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-public class ScriptEngineBindingTest {
+public class ScriptEngineBindingAndResultTest {
 
-    private static PowerShellScriptEngineNoFork scriptEngine;
+    private static PowerShellScriptEngine scriptEngine;
 
     @BeforeClass
     public static void setup() {
         assumeTrue(System.getProperty("os.name").contains("Windows"));
-        scriptEngine = new PowerShellScriptEngineNoFork();
+        scriptEngine = new PowerShellScriptEngine();
     }
 
     @Test
@@ -38,25 +38,25 @@ public class ScriptEngineBindingTest {
     @Test
     public void double_variable() throws Exception {
         scriptEngine.put("var", 42.0);
-        assertEquals(42.0, scriptEngine.eval("return [double]$var"));
+        assertEquals(42.0, scriptEngine.eval("return $var"));
     }
 
     @Test
     public void long_variable() throws Exception {
         scriptEngine.put("var", 42L);
-        assertEquals(42L, scriptEngine.eval("return [long]$var"));
+        assertEquals(42L, scriptEngine.eval("return $var"));
     }
 
     @Test
     public void char_variable() throws Exception {
         scriptEngine.put("var", 'a');
-        assertEquals('a', scriptEngine.eval("return [char]$var"));
+        assertEquals('a', scriptEngine.eval("return $var"));
     }
 
     @Test
     public void byte_variable() throws Exception {
         scriptEngine.put("var", (byte) 'a');
-        assertEquals((byte) 'a', scriptEngine.eval("return [byte]$var"));
+        assertEquals((byte) 'a', scriptEngine.eval("return $var"));
     }
 
     @Test
@@ -75,9 +75,9 @@ public class ScriptEngineBindingTest {
         scriptEngine.put("aListMixedTypes", asList(1, "abc", 3.2));
         assertEquals(asList(1, "abc", 3.2), scriptEngine.eval("return $aListMixedTypes"));
 
-
+        // http://stackoverflow.com/questions/18476634/powershell-doesnt-return-an-empty-array-as-an-array
         scriptEngine.put("emptyList", emptyList());
-        assertEquals(emptyList(), scriptEngine.eval("return $emptyList"));
+        assertEquals(emptyList(), scriptEngine.eval("return ,$emptyList"));
     }
 
     @Test
