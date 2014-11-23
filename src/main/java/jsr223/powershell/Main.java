@@ -1,34 +1,36 @@
 package jsr223.powershell;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.OutputStreamWriter;
 
 public class Main {
 
-    public static void main(String[] args) throws Exception {        
+    public static void main(String[] args) throws Exception {
         if (args.length == 0) {
             printHelpAndExit();
-        }        
-        String script = "";         
-        String option = args[0];
-        switch (option) {
-            case "-e":
-                script = args[1];
-                break;
-            case "-f":   
-                script = Resources.toString(new File(args[1]).toURI().toURL(), Charsets.UTF_8);
-                break;
-            default:
-                script = args[0];
         }
-
-        Object returnCode = new PowerShellScriptEngine().eval(script);
-        System.exit((Integer) returnCode);
+        String script = "";
+        String filename = args[0];
+        if (new File(filename).exists()) {
+            script = IOUtils.toString(new FileInputStream(filename));
+        } else {
+            for (String arg : args) {
+                script += arg + " ";
+            }
+        }
+        PowerShellScriptEngine scriptEngine = new PowerShellScriptEngine();
+        OutputStreamWriter writer = new OutputStreamWriter(System.out);
+        scriptEngine.getContext().setWriter(writer);
+        Object result = scriptEngine.eval(script);
+        writer.flush();
+        if (result != null) {
+            System.out.println(result);
+        }
     }
-    
-    public static void printHelpAndExit(){
-        System.out.println("Please specify: -f <script.ps1> or -e <PowerShell expression>");
+
+    public static void printHelpAndExit() {
+        System.out.println("Please specify: PowerShell script file or PowerShell expression");
         System.exit(0);
     }
 }

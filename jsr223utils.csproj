@@ -55,7 +55,6 @@
   <ItemGroup>
     <Compile Include="src\main\csharp\system\collections\ArrayList.generated.cs" />
     <Compile Include="src\main\csharp\system\collections\Hashtable.generated.cs" />
-    <Compile Include="src\main\csharp\system\io\StringWriter.generated.cs" />
     <Compile Include="src\main\csharp\system\management\automation\PSObject.generated.cs" />
     <Compile Include="src\main\csharp\Utils.cs" />
     <Compile Include="src\main\csharp\system\EventArgs.generated.cs" />
@@ -63,6 +62,9 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="src\main\csharp\system\io\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

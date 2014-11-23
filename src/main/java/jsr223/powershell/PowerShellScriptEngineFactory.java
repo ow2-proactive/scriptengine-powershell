@@ -5,30 +5,30 @@
  */
 package jsr223.powershell;
 
-import com.google.common.collect.ImmutableMap;
-
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-/**
- * @author Vladimir Bodnartchouk
- */
 public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     private static final String NAME = "PowerShell";
     private static final String ENGINE = "PowerShell interpreter";
-    private static final String ENGINE_VERSION = "2";//$PSVersionTable.PSVersion.Minor
+    private static final String ENGINE_VERSION = "3";
     private static final String LANGUAGE = "PowerShell";
-    private static final String LANGUAGE_VERSION = "2";//new NativeShellRunner(new Cmd()).getMajorVersion();
-    
-    private static final ImmutableMap<String, Object> parameters = ImmutableMap.of(
-                ScriptEngine.NAME, (Object)NAME,
-                ScriptEngine.ENGINE, (Object)ENGINE,
-                ScriptEngine.ENGINE_VERSION, (Object)ENGINE_VERSION,
-                ScriptEngine.LANGUAGE, (Object)LANGUAGE,
-                ScriptEngine.LANGUAGE_VERSION, (Object)LANGUAGE_VERSION);
+    private static final String LANGUAGE_VERSION = "3";
+
+    private static final Map<String, Object> PARAMETERS = new HashMap<String, Object>();
+
+    static {
+        PARAMETERS.put(ScriptEngine.NAME, NAME);
+        PARAMETERS.put(ScriptEngine.ENGINE, ENGINE);
+        PARAMETERS.put(ScriptEngine.ENGINE_VERSION, ENGINE_VERSION);
+        PARAMETERS.put(ScriptEngine.LANGUAGE, LANGUAGE);
+        PARAMETERS.put(ScriptEngine.LANGUAGE_VERSION, LANGUAGE_VERSION);
+    }
 
     @Override
     public String getEngineName() {
@@ -68,7 +68,7 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public Object getParameter(String key) {
-        return parameters.get(key);
+        return PARAMETERS.get(key);
     }
 
     @Override
@@ -97,5 +97,5 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
     @Override
     public ScriptEngine getScriptEngine() {
         return new PowerShellScriptEngine();
-    }    
+    }
 }

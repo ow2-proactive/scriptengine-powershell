@@ -46,7 +46,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <!--<ClrType TypeName="System.SByte"/>-->
   <ClrType TypeName="System.Collections.ArrayList"/>
   <ClrType TypeName="System.Collections.Hashtable"/>
-  <ClrType TypeName="System.IO.StringWriter"/>
+  <!--<ClrType TypeName="System.IO.StringWriter"/>-->
   <!--<ClrType TypeName="utils.PSUtils"/>-->
   <ClrType TypeName="System.Management.Automation.PSObject"/>
 

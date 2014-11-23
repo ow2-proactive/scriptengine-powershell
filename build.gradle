@@ -1,38 +1,20 @@
 apply plugin: 'java'
-apply plugin:'application'
+apply plugin: 'application'
 
 sourceCompatibility = '1.7'
-[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 mainClassName = 'jsr223.powershell.Main'
-
-// NetBeans will automatically add "run" and "debug" tasks relying on the
-// "mainClass" property. You may however define the property prior executing
-// tasks by passing a "-PmainClass=<QUALIFIED_CLASS_NAME>" argument.
-//
-// Note however, that you may define your own "run" and "debug" task if you
-// prefer. In this case NetBeans will not add these tasks but you may rely on
-// your own implementation.
-if (!hasProperty('mainClass')) {
-    ext.mainClass = 'jsr223.powershell.Main'
-}
+defaultTasks 'installApp'
 
 repositories {
     mavenCentral()
-    maven { url 'http://repo.activeeon.com/content/groups/proactive/' }
 }
 
 dependencies {
-    compile "org.objectweb.proactive:programming-extension-dataspaces:6.0.1"
-    compile group: 'com.google.guava', name: 'guava', version: '17.0'
-    
     // jni4net is not hosted on maven central, later put in in the activeeon repo
     compile files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
-    
-    testCompile group: 'junit', name: 'junit', version: '4.10'           
-}
+    runtime files("${projectDir}/tools/jni4net.n-0.8.8.0.dll")
+    runtime files("${projectDir}/tools/jni4net.n.w64.v40-0.8.8.0.dll")
+    runtime files("${projectDir}/tools/jsr223utils.dll")
 
-jar {
-    manifest {
-        attributes 'Main-Class': 'jsr223.powershell.Main'
-    }
+    testCompile group: 'junit', name: 'junit', version: '4.10'
 }

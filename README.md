@@ -1,10 +1,38 @@
-Supported types
+# powershell-jsr223
 
-! char => string (variable)
+PowerShell script engine for Java implementing JSR 223
+
+## Supported PowerShell version
+
+* 3.0 at least
+
+## Usage
+
+Simply add the JAR and DLLs to your classpath and follow the [Java Scripting Programmer's guide](http://docs.oracle.com/javase/6/docs/technotes/guides/scripting/programmer_guide/index.html)
+
+## Build
+
+Run gradlew script, it produces a JAR file and DDLs in build/install
+
+## How it works
+
+It uses [jni4net](https://github.com/jni4net/jni4net) to call the PowerShell API.
+
+### Bindings
+
+Script bindings are exported in the PowerShell engine before running the script.
+
+PowerShell supported types are: string, char, byte, int, long, bool, double, array, hashtable.
+
+Java List are mapped to PowerShell array.
+Java Map are mapped to PowerShell hashtable.
+
+### Script Result
+
+Results produced by return or Write-Output are retrieved and converted back to Java.
 
 
-Utils to generate jni4net code for System.EventHandler
----
+### To update jni4net bindings // TODO TO BE COMPLETED
 
 This is most complex sample, because you need to generate proxies and compile both C# and Java side.
 
