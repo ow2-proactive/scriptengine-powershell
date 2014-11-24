@@ -2,9 +2,10 @@
 
 PowerShell script engine for Java implementing JSR 223
 
-## Supported PowerShell version
+## Requirements
 
-* 3.0 at least
+* .NET 4
+* Windows Management Framework 3.0
 
 ## Usage
 

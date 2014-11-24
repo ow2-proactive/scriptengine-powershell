@@ -13,6 +13,7 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
+// TODO add some null tests
 public class ScriptEngineBindingAndResultTest {
 
     private static PowerShellScriptEngine scriptEngine;
@@ -68,7 +69,7 @@ public class ScriptEngineBindingAndResultTest {
     }
 
     @Test
-    public void array() throws Exception {
+    public void list() throws Exception {
         scriptEngine.put("aList", asList(1, 2, 3));
         assertEquals(asList(1, 2, 3), scriptEngine.eval("return $aList"));
 
@@ -81,9 +82,25 @@ public class ScriptEngineBindingAndResultTest {
     }
 
     @Test
-    public void nested_array() throws Exception {
+    public void array() throws Exception {
+        scriptEngine.put("anArray", new Object[]{1, "abc", 4.2});
+        assertEquals(asList(1, "abc", 4.2), scriptEngine.eval("return $anArray"));
+        assertEquals(asList(1, "abc", 4.2), scriptEngine.eval("Write-Output $anArray"));
+        assertEquals(1, scriptEngine.eval("Write-Output $anArray[0]"));
+        assertEquals("abc", scriptEngine.eval("return $anArray[1]"));
+    }
+
+    @Test
+    public void nested_list() throws Exception {
         scriptEngine.put("nestedList", asList(asList(1, 2, 3), 2, 3));
         assertEquals(asList(asList(1, 2, 3), 2, 3), scriptEngine.eval("return $nestedList"));
+    }
+
+    @Test
+    public void null_result() throws Exception {
+        scriptEngine.put("nullVar", null);
+        assertEquals(null, scriptEngine.eval("return $nullVar"));
+        assertEquals(null, scriptEngine.eval("return $null"));
     }
 
     @Test

@@ -1,11 +1,19 @@
 package jsr223.powershell;
 
+import org.objectweb.proactive.extensions.dataspaces.vfs.adapter.VFSFileObjectAdapter;
+import org.ow2.proactive.scheduler.common.task.TaskResult;
 import system.Decimal;
 import system.ValueType;
 import system.collections.IDictionary;
 import system.collections.IDictionaryEnumerator;
 import system.collections.IList;
 
+import javax.script.ScriptException;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +23,7 @@ import java.util.Set;
 public class CSharpJavaConverter {
 
     @SuppressWarnings("unchecked")
-    static system.Object convertJavaObjectToCSharpObject(PowerShellCachedCaller psCaller, Object bindingValue) {
+    static system.Object convertJavaObjectToCSharpObject(PowerShellCachedCaller psCaller, Object bindingValue) throws ScriptException {
         if (bindingValue instanceof String) {
             return new system.String((String) bindingValue);
         } else if (bindingValue instanceof Integer) {
@@ -30,6 +38,21 @@ public class CSharpJavaConverter {
             return psCaller.toChar(bindingValue.toString());
         } else if (bindingValue instanceof Boolean) {
             return psCaller.toBool(bindingValue.toString());
+        } else if (bindingValue instanceof TaskResult) {
+            Serializable taskResultValue;
+            try {
+                taskResultValue = ((TaskResult) bindingValue).value();
+            } catch (Throwable throwable) {
+                taskResultValue = throwable;
+            }
+            return convertJavaObjectToCSharpObject(psCaller, taskResultValue);
+        } else if (bindingValue instanceof VFSFileObjectAdapter) {
+            VFSFileObjectAdapter vfsFileObject = (VFSFileObjectAdapter) bindingValue;
+            try {
+                return new system.String(convertToPath(vfsFileObject));
+            } catch (Exception e) {
+                throw new ScriptException(e);
+            }
         } else if (bindingValue instanceof List) {
             system.collections.ArrayList cSharpList = new system.collections.ArrayList();
             for (Object entry : (List) bindingValue) {
@@ -42,8 +65,23 @@ public class CSharpJavaConverter {
                 cSharpMap.Add(new system.String(entry.getKey().toString()), convertJavaObjectToCSharpObject(psCaller, entry.getValue()));
             }
             return cSharpMap;
+        } else if (bindingValue instanceof Object[]) {
+            system.collections.ArrayList cSharpList = new system.collections.ArrayList();
+            for (Object entry : (Object[]) bindingValue) {
+                cSharpList.Add(convertJavaObjectToCSharpObject(psCaller, entry));
+            }
+            return cSharpList;
+        } else if (bindingValue != null) {
+            return new system.String(bindingValue.toString()); // TODO get taskresult class and use real object inside
         }
         return null;
+    }
+
+    private static String convertToPath(VFSFileObjectAdapter dsfo) throws URISyntaxException, IOException {
+        String path = dsfo.getRealURI();
+        URI uri = new URI(path);
+        File f = new File(uri);
+        return f.getCanonicalPath();
     }
 
     static java.lang.Object convertCSharpObjectToJavaObject(system.Object scriptResultObject) {
@@ -87,8 +125,10 @@ public class CSharpJavaConverter {
                 javaMap.put(key, value);
             }
             return javaMap;
-        } else {
+        } else if (scriptResultObject != null) {
             return scriptResultObject.toString();
+        } else {
+            return null;
         }
     }
 }

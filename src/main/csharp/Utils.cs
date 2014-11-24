@@ -21,6 +21,11 @@ namespace utils
             ps.Streams.Verbose.DataAdded += new EventHandler<DataAddedEventArgs>(errorEvt);
         }
 
+        public static object GetVariable(PowerShell ps, System.String name)
+        {
+            return ps.Runspace.SessionStateProxy.GetVariable(name);
+        }
+
         public static System.Boolean toBool(String value)
         {
             return System.Boolean.Parse(value);

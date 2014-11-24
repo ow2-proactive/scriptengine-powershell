@@ -7,13 +7,34 @@ defaultTasks 'installApp'
 
 repositories {
     mavenCentral()
+    maven { url 'http://repo.activeeon.com/content/groups/proactive/' }
+}
+
+configurations {
+    provided
+}
+
+sourceSets {
+    main {
+        compileClasspath += configurations.provided
+    }
 }
 
 dependencies {
+    provided "org.objectweb.proactive:programming-extension-dataspaces:6.0.1"
+    provided "org.ow2.proactive:scheduler-api:6.0.1"
+
+    testRuntime "org.objectweb.proactive:programming-extension-dataspaces:6.0.1"
+    testRuntime "org.ow2.proactive:scheduler-api:6.0.1"
+
     // jni4net is not hosted on maven central, later put in in the activeeon repo
     compile files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
+
     runtime files("${projectDir}/tools/jni4net.n-0.8.8.0.dll")
     runtime files("${projectDir}/tools/jni4net.n.w64.v40-0.8.8.0.dll")
+    runtime files("${projectDir}/tools/jni4net.n.w32.v40-0.8.8.0.dll")
+    runtime files("${projectDir}/tools/jni4net.n.w64.v20-0.8.8.0.dll")
+    runtime files("${projectDir}/tools/jni4net.n.w32.v20-0.8.8.0.dll")
     runtime files("${projectDir}/tools/jsr223utils.dll")
 
     testCompile group: 'junit', name: 'junit', version: '4.10'

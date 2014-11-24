@@ -98,4 +98,8 @@ class PowerShellCachedCaller {
     public void dispose(system.Object pslInstance) {
         PowerShell.GetMethod("Dispose", EMPTY_TYPE_ARRAY).Invoke(pslInstance, null);
     }
+
+    public system.Object getVariables(system.Object psInstance, String name) {
+        return HandlerUtils.GetMethod("GetVariable").Invoke(null, new system.Object[]{psInstance, new system.String(name)});
+    }
 }

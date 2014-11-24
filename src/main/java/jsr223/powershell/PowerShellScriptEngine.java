@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static jsr223.powershell.CSharpJavaConverter.convertCSharpObjectToJavaObject;
+
 public class PowerShellScriptEngine extends AbstractScriptEngine {
 
     private final PowerShellCachedCaller psCaller;
@@ -41,6 +43,7 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
 
             addStreamsHandler(ps, error);
 
+            addProActivePropertiesAsScriptBindings(context);
             addScriptBindings(context, ps);
 
             psCaller.addScript(ps, script);
@@ -48,6 +51,8 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
             system.Object scriptResults = psCaller.invoke(ps);
 
             List<Object> resultAsList = convertResultToJava((IEnumerable) scriptResults);
+
+            addScriptEngineVariablesToEngine(psCaller, ps, context);
 
             if (error[0] != null) {
                 throw error[0];
@@ -67,19 +72,60 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         }
     }
 
+    private void addScriptEngineVariablesToEngine(PowerShellCachedCaller psCaller, system.Object ps, ScriptContext context) {
+        readBindingFromPowerShellContext(psCaller, ps, context, "result");
+        readBindingFromPowerShellContext(psCaller, ps, context, "selected");
+        readBindingFromPowerShellContext(psCaller, ps, context, "command");
+        readBindingFromPowerShellContext(psCaller, ps, context, "branch");
+        Object variablesFromScheduler = context.getAttribute("variables");
+        if (variablesFromScheduler instanceof Map) {
+            Map variablesMapFromScheduler = (Map) variablesFromScheduler;
+            Object variablesFromScript = convertCSharpObjectToJavaObject(psCaller.getVariables(ps, "variables"));
+            if (variablesFromScript instanceof Map) {
+                variablesMapFromScheduler.clear();
+                variablesMapFromScheduler.putAll((Map) variablesFromScript);
+            }
+        }
+    }
+
+    private void readBindingFromPowerShellContext(PowerShellCachedCaller psCaller, system.Object ps, ScriptContext context, String bindingName) {
+        Object binding = convertCSharpObjectToJavaObject(psCaller.getVariables(ps, bindingName));
+        if (binding != null) {
+            context.setAttribute(bindingName, binding, ScriptContext.ENGINE_SCOPE);
+        }
+    }
+
+    private void addProActivePropertiesAsScriptBindings(ScriptContext context) {
+        addSystemPropertyAsScriptBinding(context, "pasJobId", "pas.job.id");
+        addSystemPropertyAsScriptBinding(context, "pasJobName", "pas.job.name");
+        addSystemPropertyAsScriptBinding(context, "pasTaskId", "pas.task.id");
+        addSystemPropertyAsScriptBinding(context, "pasTaskName", "pas.task.name");
+        addSystemPropertyAsScriptBinding(context, "pasTaskIteration", "pas.task.iteration");
+        addSystemPropertyAsScriptBinding(context, "pasTaskReplication", "pas.task.replication");
+    }
+
+    private void addSystemPropertyAsScriptBinding(ScriptContext context, String bindingName, String systemPropertyName) {
+        String systemProperty = System.getProperty(systemPropertyName);
+        if (systemProperty != null) {
+            context.setAttribute(bindingName, systemProperty, ScriptContext.ENGINE_SCOPE);
+        }
+    }
+
     private List<Object> convertResultToJava(IEnumerable scriptResults) {
         List<Object> resultAsList = new ArrayList<>();
         IEnumerator scriptResultsEnumerator = scriptResults.GetEnumerator();
         while (scriptResultsEnumerator.MoveNext()) {
             system.management.automation.PSObject scriptResult = (system.management.automation.PSObject) scriptResultsEnumerator.getCurrent();
-            system.Object scriptResultObject = scriptResult.getBaseObject();
-            Object javaScriptResult = CSharpJavaConverter.convertCSharpObjectToJavaObject(scriptResultObject);
-            resultAsList.add(javaScriptResult);
+            if (scriptResult != null) {
+                system.Object scriptResultObject = scriptResult.getBaseObject();
+                Object javaScriptResult = convertCSharpObjectToJavaObject(scriptResultObject);
+                resultAsList.add(javaScriptResult);
+            }
         }
         return resultAsList;
     }
 
-    private void addScriptBindings(ScriptContext context, system.Object ps) {
+    private void addScriptBindings(ScriptContext context, system.Object ps) throws ScriptException {
         for (Map.Entry<String, Object> binding : context.getBindings(ScriptContext.ENGINE_SCOPE).entrySet()) {
             String bindingKey = binding.getKey();
             Object bindingValue = binding.getValue();
@@ -145,8 +191,8 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         try {
             // create bridge, with default setup
             // it will lookup jni4net.n.dll next to jni4net.j.jar
-//            Bridge.setDebug(true);
-//            Bridge.setVerbose(true);
+            Bridge.setDebug(true);
+            Bridge.setVerbose(true);
             Bridge.init();
 
             // Get directory that contains the jni4net.jar
