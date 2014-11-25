@@ -1,6 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'application'
 
+version = "0.1";
 sourceCompatibility = '1.7'
 mainClassName = 'jsr223.powershell.Main'
 defaultTasks 'installApp'
