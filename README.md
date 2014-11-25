@@ -13,7 +13,7 @@ Simply add the JAR and DLLs to your classpath and follow the [Java Scripting Pro
 
 ## Build
 
-Run gradlew script, it produces a JAR file and DDLs in build/install
+Run gradlew script, it produces JARs and DDLs in build/install
 
 ## How it works
 
@@ -28,34 +28,20 @@ PowerShell supported types are: string, char, byte, int, long, bool, double, arr
 Java List are mapped to PowerShell array.
 Java Map are mapped to PowerShell hashtable.
 
+The following types are NOT supported: single decimal datetime xml.
+
 ### Script Result
 
 Results produced by return or Write-Output are retrieved and converted back to Java.
 
+### To update jni4net bindings
 
-### To update jni4net bindings // TODO TO BE COMPLETED
-
-This is most complex sample, because you need to generate proxies and compile both C# and Java side.
-
-2) Look at the `utils.proxygen.xml` file. It defines what proxies will be generated.
-
-3) Run `generateProxies.cmd`, it will generate 
-- Java proxies of .NET classes 
-- and C# codebe-hind classes
-
-4) Now you need to compile codebe-hind classes into assembly. 
-- Start Visual Studio, 
-- open `utils.csproj`
-- compile it
-- verify that files exist `target\utils.dll`
-
-5) copy all utils.dll to ..\lib\
-
-6) java sources will be generate into ../src/
-- start `samples\winforms\build.cmd`
-- or run ant
-- or build it in your Java IDE
-
-7) run the test
-- start `samples\winforms\run.cmd`
-- or debug it step-by-step in Java IDE
+* Look at the `utils.proxygen.xml` file. It defines what proxies will be generated.
+* Run `generateProxies.cmd`, it will generate
+    * Java proxies of .NET classes
+    * and C# codebe-hind classes
+* Now you need to compile codebe-hind classes into assembly.
+    * Start Visual Studio,
+    * open `utils.csproj`
+    * eventually add newly generated files to the project
+    * compile it
