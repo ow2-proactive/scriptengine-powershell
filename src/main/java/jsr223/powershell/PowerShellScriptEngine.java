@@ -35,24 +35,24 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
 
     @Override
     public Object eval(String script, ScriptContext context) throws ScriptException {
-        system.Object ps = null;
+        system.Object powerShellInstance = null;
         try {
-            ps = psCaller.createNewPowerShellInstance();
+            powerShellInstance = psCaller.createNewPowerShellInstance();
 
             final ScriptException[] error = {null};
 
-            addStreamsHandler(ps, error);
+            addStreamsHandler(powerShellInstance, error, context);
 
             addProActivePropertiesAsScriptBindings(context);
-            addScriptBindings(context, ps);
+            addScriptBindings(context, powerShellInstance);
 
-            psCaller.addScript(ps, script);
+            psCaller.addScript(powerShellInstance, script);
 
-            system.Object scriptResults = psCaller.invoke(ps);
+            system.Object scriptResults = psCaller.invoke(powerShellInstance);
 
             List<Object> resultAsList = convertResultToJava((IEnumerable) scriptResults);
 
-            addScriptEngineVariablesToEngine(psCaller, ps, context);
+            addScriptEngineVariablesToEngine(psCaller, powerShellInstance, context);
 
             if (error[0] != null) {
                 throw error[0];
@@ -66,12 +66,13 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
                 return resultAsList;
             }
         } finally {
-            if (ps != null) {
-                psCaller.dispose(ps);
+            if (powerShellInstance != null) {
+                psCaller.dispose(powerShellInstance);
             }
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void addScriptEngineVariablesToEngine(PowerShellCachedCaller psCaller, system.Object ps, ScriptContext context) {
         readBindingFromPowerShellContext(psCaller, ps, context, "result");
         readBindingFromPowerShellContext(psCaller, ps, context, "selected");
@@ -133,10 +134,10 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         }
     }
 
-    private void addStreamsHandler(system.Object ps, final ScriptException[] error) {
+    private void addStreamsHandler(system.Object ps, final ScriptException[] error, final ScriptContext context) {
         EventHandler outputHandler = new EventHandler() {
             public void Invoke(system.Object sender, EventArgs e) {
-                Writer debugOutput = PowerShellScriptEngine.this.getContext().getWriter();
+                Writer debugOutput = context.getWriter();
                 String debugMessage = getMessageFromEvent(sender);
                 try {
                     debugOutput.append(debugMessage);
@@ -147,7 +148,7 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
 
         EventHandler errorHandler = new EventHandler() {
             public void Invoke(system.Object sender, EventArgs e) {
-                Writer errorOutput = PowerShellScriptEngine.this.getContext().getErrorWriter();
+                Writer errorOutput = context.getErrorWriter();
                 String errorMessage = getMessageFromEvent(sender);
                 try {
                     error[0] = new ScriptException(errorMessage);
@@ -187,12 +188,13 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         return new PowerShellScriptEngineFactory();
     }
 
-    public File initAndFindDll() {
+    private File initAndFindDll() {
         try {
             // create bridge, with default setup
             // it will lookup jni4net.n.dll next to jni4net.j.jar
-            Bridge.setDebug(true);
-            Bridge.setVerbose(true);
+            boolean isDebug = System.getProperty("powershell.debug") != null && Boolean.parseBoolean(System.getProperty("powershell.debug"));
+            Bridge.setDebug(isDebug);
+            Bridge.setVerbose(isDebug);
             Bridge.init();
 
             // Get directory that contains the jni4net.jar
@@ -204,49 +206,4 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         }
     }
 
-//
-//        // Add extra variables from scheduler
-//        String pasJobId = System.getProperty("pas.job.id");
-//        if (pasJobId != null) {
-//            environment.put("JOB_ID", pasJobId);
-//        }
-//        String pasJobName = System.getProperty("pas.job.name");
-//        if (pasJobName != null) {
-//            environment.put("JOB_NAME", pasJobName);
-//        }
-//        String pasTaskId = System.getProperty("pas.task.id");
-//        if (pasTaskId != null) {
-//            environment.put("TASK_ID", pasTaskId);
-//        }
-//        String pasTaskName = System.getProperty("pas.task.name");
-//        if (pasTaskName != null) {
-//            environment.put("TASK_NAME", pasTaskName);
-//        }
-//        String pasTaskIteration = System.getProperty("pas.task.iteration");
-//        if (pasTaskIteration != null) {
-//            environment.put("TASK_ITERATION", pasTaskIteration);
-//        }
-//        String pasTaskReplication = System.getProperty("pas.task.replication");
-//        if (pasTaskReplication != null) {
-//            environment.put("TASK_REPLICATION", pasTaskReplication);
-//        }
-//    }
-
-    // return can be an an array of object, test many cases with wrapping and co
-//    [string]    Fixed-length string of Unicode characters
-//    [char]      A Unicode 16-bit character
-//    [byte]      An 8-bit unsigned character
-//
-//    [int]       32-bit signed integer
-//    [long]      64-bit signed integer
-//    [bool]      Boolean True/False value
-//
-//    [decimal]   A 128-bit decimal value
-//    [single]    Single-precision 32-bit floating point number
-//    [double]    Double-precision 64-bit floating point number
-//    [DateTime]  Date and Time
-//
-//    [xml]       Xml object
-//    [array]     An array of values
-//    [hashtable] Hashtable object
 }

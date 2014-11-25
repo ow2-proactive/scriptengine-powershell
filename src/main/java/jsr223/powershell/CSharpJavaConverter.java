@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +53,7 @@ public class CSharpJavaConverter {
             try {
                 return new system.String(convertToPath(vfsFileObject));
             } catch (Exception e) {
-                throw new ScriptException(e);
+                return new system.String(vfsFileObject.getRealURI()); // dataspace not supported if it is not filesystem
             }
         } else if (bindingValue instanceof List) {
             system.collections.ArrayList cSharpList = new system.collections.ArrayList();
@@ -72,7 +74,7 @@ public class CSharpJavaConverter {
             }
             return cSharpList;
         } else if (bindingValue != null) {
-            return new system.String(bindingValue.toString()); // TODO get taskresult class and use real object inside
+            return new system.String(bindingValue.toString());
         }
         return null;
     }
@@ -98,7 +100,16 @@ public class CSharpJavaConverter {
             } else if (scriptResultValue.GetType().getName().equals("Int64")) {
                 return Long.parseLong(scriptResultObject.toString());
             } else if (scriptResultValue.GetType().getName().equals("Double")) {
-                return Double.parseDouble(scriptResultObject.toString());
+                try {
+                    return Double.parseDouble(scriptResultObject.toString());
+                } catch (NumberFormatException nfe) {
+                    try {
+                        // in case a locale using , as separator is used
+                        return NumberFormat.getInstance().parse(scriptResultObject.toString()).floatValue();
+                    } catch (ParseException pe) {
+                        return scriptResultObject.toString();
+                    }
+                }
             } else if (scriptResultValue.GetType().getName().equals("Byte")) {
                 return Byte.parseByte(scriptResultValue.toString());
             } else if (scriptResultValue.GetType().getName().equals("Char")) {
