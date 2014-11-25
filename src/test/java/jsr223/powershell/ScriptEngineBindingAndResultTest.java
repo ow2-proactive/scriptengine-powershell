@@ -91,6 +91,14 @@ public class ScriptEngineBindingAndResultTest {
     }
 
     @Test
+    public void script_args() throws Exception {
+        scriptEngine.put("args", new Object[]{"abc"});
+        assertEquals(asList("abc"), scriptEngine.eval("return ,$args"));
+        assertEquals("abc", scriptEngine.eval("return $args")); // single element array is converted to its element automatically
+        assertEquals("abc", scriptEngine.eval("return $args[0]"));
+    }
+
+    @Test
     public void nested_list() throws Exception {
         scriptEngine.put("nestedList", asList(asList(1, 2, 3), 2, 3));
         assertEquals(asList(asList(1, 2, 3), 2, 3), scriptEngine.eval("return $nestedList"));

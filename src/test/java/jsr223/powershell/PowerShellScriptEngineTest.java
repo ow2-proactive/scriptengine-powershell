@@ -8,6 +8,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -36,6 +37,11 @@ public class PowerShellScriptEngineTest {
     @Test
     public void emptyScript() throws Exception {
         assertEquals(null, scriptEngine.eval(""));
+    }
+
+    @Test
+    public void noUnderlyingBaseObject() throws Exception {
+        assertNotNull(scriptEngine.eval("Get-Variable"));
     }
 
     @Test(expected = ScriptException.class)

@@ -30,6 +30,8 @@ Java Map are mapped to PowerShell hashtable.
 
 The following types are NOT supported: single decimal datetime xml.
 
+To pass arguments/parameters to a PowerShell ($args), you can set a binding called args.
+
 ### Script Result
 
 Results produced by return or Write-Output are retrieved and converted back to Java.

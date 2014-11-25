@@ -14,6 +14,7 @@ class PowerShellCachedCaller {
 
     final Type[] EMPTY_TYPE_ARRAY = new Type[]{};
     final Type HandlerUtils, Int32, String, PowerShell, PSDataStreams, DataAddedEventArgs;
+    private final Type IList;
 
     public PowerShellCachedCaller(File jsr223dll) {
         // Load jsr223utils.dll and register as main assembly
@@ -21,6 +22,7 @@ class PowerShellCachedCaller {
         Bridge.RegisterAssembly(wfAssembly);
         Int32 = Type.GetType("System.Int32");
         String = Type.GetType("System.String");
+        IList = Type.GetType("System.Collections.IList");
         HandlerUtils = wfAssembly.GetType("utils.HandlerUtils");
 
         // Load automation assembly for PowerShell
@@ -68,8 +70,11 @@ class PowerShellCachedCaller {
         return HandlerUtils.GetMethod(methodName).Invoke(null, new system.Object[]{new system.String(value)});
     }
 
-    public void addScript(system.Object psInstance, String script) {
+    public void addScript(system.Object psInstance, String script, system.Object args) {
         PowerShell.GetMethod("AddScript", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String(script)});
+        if (args != null) {
+            PowerShell.GetMethod("AddParameters", new Type[]{IList}).Invoke(psInstance, new system.Object[]{args});
+        }
     }
 
     public void setVariable(system.Object psInstance, java.lang.String variableName, system.Object variableValue) {

@@ -46,7 +46,7 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
             addProActivePropertiesAsScriptBindings(context);
             addScriptBindings(context, powerShellInstance);
 
-            psCaller.addScript(powerShellInstance, script);
+            psCaller.addScript(powerShellInstance, script, getScriptArguments(context));
 
             system.Object scriptResults = psCaller.invoke(powerShellInstance);
 
@@ -70,6 +70,11 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
                 psCaller.dispose(powerShellInstance);
             }
         }
+    }
+
+    private system.Object getScriptArguments(ScriptContext context) throws ScriptException {
+        Object argsFromBinding = context.getBindings(ScriptContext.ENGINE_SCOPE).get("args");
+        return CSharpJavaConverter.convertJavaObjectToCSharpObject(psCaller, argsFromBinding);
     }
 
     @SuppressWarnings("unchecked")
@@ -118,7 +123,12 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         while (scriptResultsEnumerator.MoveNext()) {
             system.management.automation.PSObject scriptResult = (system.management.automation.PSObject) scriptResultsEnumerator.getCurrent();
             if (scriptResult != null) {
-                system.Object scriptResultObject = scriptResult.getBaseObject();
+                system.Object scriptResultObject;
+                try {
+                    scriptResultObject = scriptResult.getBaseObject();
+                } catch (Exception e) {
+                    scriptResultObject = scriptResult;
+                }
                 Object javaScriptResult = convertCSharpObjectToJavaObject(scriptResultObject);
                 resultAsList.add(javaScriptResult);
             }
