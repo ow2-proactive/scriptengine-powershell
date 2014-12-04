@@ -1,16 +1,16 @@
 package jsr223.powershell;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
 // TODO add some null tests
@@ -119,7 +119,7 @@ public class ScriptEngineBindingAndResultTest {
         scriptEngine.put("singletonMap", singletonMap("key", "value"));
         assertEquals(singletonMap("key", "value"), scriptEngine.eval("return $singletonMap"));
 
-        Map<String, Object> aMap = new HashMap<>();
+        Map<String, Object> aMap = new HashMap<String, Object>();
         aMap.put("key", "value");
         aMap.put("key2", 42);
         scriptEngine.put("aMap", aMap);

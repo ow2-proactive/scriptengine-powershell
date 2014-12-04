@@ -1,14 +1,5 @@
 package jsr223.powershell;
 
-import org.objectweb.proactive.extensions.dataspaces.vfs.adapter.VFSFileObjectAdapter;
-import org.ow2.proactive.scheduler.common.task.TaskResult;
-import system.Decimal;
-import system.ValueType;
-import system.collections.IDictionary;
-import system.collections.IDictionaryEnumerator;
-import system.collections.IList;
-
-import javax.script.ScriptException;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -21,6 +12,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.script.ScriptException;
+
+import org.objectweb.proactive.extensions.dataspaces.vfs.adapter.VFSFileObjectAdapter;
+import org.ow2.proactive.scheduler.common.task.TaskResult;
+import system.Decimal;
+import system.ValueType;
+import system.collections.IDictionary;
+import system.collections.IDictionaryEnumerator;
+import system.collections.IList;
 
 public class CSharpJavaConverter {
 
@@ -121,7 +122,7 @@ public class CSharpJavaConverter {
             }
         } else if (scriptResultObject instanceof system.collections.IList) {
             system.collections.IList asList = ((IList) scriptResultObject);
-            List<Object> javaList = new ArrayList<>();
+            List<Object> javaList = new ArrayList<Object>();
             for (int i = 0; i < asList.getCount(); i++) {
                 javaList.add(convertCSharpObjectToJavaObject(asList.getItem(i)));
             }
@@ -129,7 +130,7 @@ public class CSharpJavaConverter {
         } else if (scriptResultObject instanceof IDictionary) {
             IDictionary asMap = ((IDictionary) scriptResultObject);
             IDictionaryEnumerator enumerator = asMap.GetEnumerator();
-            Map<String, Object> javaMap = new HashMap<>();
+            Map<String, Object> javaMap = new HashMap<String, Object>();
             while (enumerator.MoveNext()) {
                 String key = enumerator.getKey().toString();
                 Object value = convertCSharpObjectToJavaObject(enumerator.getValue());
