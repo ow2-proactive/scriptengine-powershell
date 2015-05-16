@@ -1,4 +1,4 @@
-# powershell-jsr223
+# scriptengine-powershell
 
 PowerShell script engine for Java implementing JSR 223
 
