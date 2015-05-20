@@ -9,7 +9,7 @@ defaultTasks 'installApp'
 
 repositories {
     mavenCentral()
-    maven { url 'http://repo.activeeon.com/content/groups/proactive/' }
+    maven { url 'http://repository.activeeon.com/content/groups/proactive/' }
 }
 
 configurations {
