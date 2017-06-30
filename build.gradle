@@ -3,7 +3,6 @@ apply plugin: 'application'
 apply plugin: 'idea'
 apply plugin: 'maven'
 
-version = "0.1";
 sourceCompatibility = '1.7'
 mainClassName = 'jsr223.powershell.Main'
 defaultTasks 'installApp'
@@ -48,11 +47,11 @@ idea {
 }
 
 dependencies {
-    provided "org.objectweb.proactive:programming-extension-dataspaces:7.29.0-SNAPSHOT"
-    provided "org.ow2.proactive:scheduler-api:7.29.0-SNAPSHOT"
+    provided "org.objectweb.proactive:programming-extension-dataspaces:${schedulingVersion}"
+    provided "org.ow2.proactive:scheduler-api:${schedulingVersion}"
 
-    testRuntime "org.objectweb.proactive:programming-extension-dataspaces:7.29.0-SNAPSHOT"
-    testRuntime "org.ow2.proactive:scheduler-api:7.29.0-SNAPSHOT"
+    testRuntime "org.objectweb.proactive:programming-extension-dataspaces:${schedulingVersion}"
+    testRuntime "org.ow2.proactive:scheduler-api:${schedulingVersion}"
 
     // jni4net is not hosted on maven central, later put in in the activeeon repo
     compile files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
