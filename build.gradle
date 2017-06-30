@@ -7,6 +7,18 @@ sourceCompatibility = '1.7'
 mainClassName = 'jsr223.powershell.Main'
 defaultTasks 'installApp'
 
+// Configure the maven repository deployment
+install {
+    repositories.mavenInstaller {
+        // Set the version
+        pom.version = project.version
+        // Set the group/namespace for the maven repository deployment.
+        pom.groupId = project.groupId
+        // Give the artifact a 'base name' (The version is added to the 'base name')
+        pom.artifactId = project.artifactId
+    }
+}
+
 repositories {
     if (project.hasProperty('local')) {
             mavenLocal()
