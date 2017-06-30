@@ -30,13 +30,13 @@ public class CSharpJavaConverter {
         if (bindingValue instanceof String) {
             return new system.String((String) bindingValue);
         } else if (bindingValue instanceof Integer) {
-            return psCaller.toInt(bindingValue.toString());
+            return psCaller.toInt(String.format(java.util.Locale.getDefault(), "%d", bindingValue));
         } else if (bindingValue instanceof Long) {
-            return psCaller.toLong(bindingValue.toString());
+            return psCaller.toLong(String.format(java.util.Locale.getDefault(), "%d", bindingValue));
         } else if (bindingValue instanceof Double) {
-            return psCaller.toDouble(bindingValue.toString());
+            return psCaller.toDouble(String.format(java.util.Locale.getDefault(), "%f", bindingValue));
         } else if (bindingValue instanceof Byte) {
-            return psCaller.toByte(bindingValue.toString());
+            return psCaller.toByte(String.format(java.util.Locale.getDefault(), "%d", bindingValue));
         } else if (bindingValue instanceof Character) {
             return psCaller.toChar(bindingValue.toString());
         } else if (bindingValue instanceof Boolean) {
@@ -106,7 +106,7 @@ public class CSharpJavaConverter {
                 } catch (NumberFormatException nfe) {
                     try {
                         // in case a locale using , as separator is used
-                        return NumberFormat.getInstance().parse(scriptResultObject.toString()).floatValue();
+                        return NumberFormat.getInstance().parse(scriptResultObject.toString()).doubleValue();
                     } catch (ParseException pe) {
                         return scriptResultObject.toString();
                     }

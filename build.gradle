@@ -8,8 +8,14 @@ mainClassName = 'jsr223.powershell.Main'
 defaultTasks 'installApp'
 
 repositories {
-    mavenCentral()
-    maven { url 'http://repository.activeeon.com/content/groups/proactive/' }
+    if (project.hasProperty('local')) {
+            mavenLocal()
+        }
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        maven { url 'http://repository.activeeon.com/content/groups/proactive/'}
 }
 
 configurations {
@@ -29,11 +35,11 @@ idea {
 }
 
 dependencies {
-    provided "org.objectweb.proactive:programming-extension-dataspaces:6.0.1"
-    provided "org.ow2.proactive:scheduler-api:6.0.1"
+    provided "org.objectweb.proactive:programming-extension-dataspaces:7.29.0-SNAPSHOT"
+    provided "org.ow2.proactive:scheduler-api:7.29.0-SNAPSHOT"
 
-    testRuntime "org.objectweb.proactive:programming-extension-dataspaces:6.0.1"
-    testRuntime "org.ow2.proactive:scheduler-api:6.0.1"
+    testRuntime "org.objectweb.proactive:programming-extension-dataspaces:7.29.0-SNAPSHOT"
+    testRuntime "org.ow2.proactive:scheduler-api:7.29.0-SNAPSHOT"
 
     // jni4net is not hosted on maven central, later put in in the activeeon repo
     compile files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
@@ -45,5 +51,6 @@ dependencies {
     runtime files("${projectDir}/tools/jni4net.n.w32.v20-0.8.8.0.dll")
     runtime files("${projectDir}/tools/jsr223utils.dll")
 
-    testCompile group: 'junit', name: 'junit', version: '4.10'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile 'com.google.guava:guava:19.0'
 }

@@ -13,6 +13,8 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
+import com.google.common.collect.Lists;
+
 // TODO add some null tests
 public class ScriptEngineBindingAndResultTest {
 
@@ -71,10 +73,10 @@ public class ScriptEngineBindingAndResultTest {
     @Test
     public void list() throws Exception {
         scriptEngine.put("aList", asList(1, 2, 3));
-        assertEquals(asList(1, 2, 3), scriptEngine.eval("return $aList"));
+        assertEquals(Lists.newArrayList(1, 2, 3), scriptEngine.eval("return $aList"));
 
         scriptEngine.put("aListMixedTypes", asList(1, "abc", 3.2));
-        assertEquals(asList(1, "abc", 3.2), scriptEngine.eval("return $aListMixedTypes"));
+        assertEquals(Lists.newArrayList(1, "abc", 3.2), scriptEngine.eval("return $aListMixedTypes"));
 
         // http://stackoverflow.com/questions/18476634/powershell-doesnt-return-an-empty-array-as-an-array
         scriptEngine.put("emptyList", emptyList());
@@ -84,8 +86,8 @@ public class ScriptEngineBindingAndResultTest {
     @Test
     public void array() throws Exception {
         scriptEngine.put("anArray", new Object[]{1, "abc", 4.2});
-        assertEquals(asList(1, "abc", 4.2), scriptEngine.eval("return $anArray"));
-        assertEquals(asList(1, "abc", 4.2), scriptEngine.eval("Write-Output $anArray"));
+        assertEquals(Lists.newArrayList(1, "abc", 4.2), scriptEngine.eval("return $anArray"));
+        assertEquals(Lists.newArrayList(1, "abc", 4.2), scriptEngine.eval("Write-Output $anArray"));
         assertEquals(1, scriptEngine.eval("Write-Output $anArray[0]"));
         assertEquals("abc", scriptEngine.eval("return $anArray[1]"));
     }
