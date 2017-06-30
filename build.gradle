@@ -54,3 +54,28 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile 'com.google.guava:guava:19.0'
 }
+
+// Upload the archives to the nexus repository. For execution, that needs to have
+// the username and password set in the command line by -DnexusUsername=[username]
+// and -DnexusPassword=[password]
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            // Set the version
+            pom.version = project.version
+            // Set the group/namespace for the maven repository deployment.
+            pom.groupId = project.groupId
+            // Give the artifact a 'base name' (The version is added to the 'base name')
+            pom.artifactId = project.artifactId
+
+            snapshotRepository(url: "http://repository.activeeon.com/content/repositories/snapshots/") {
+                authentication(userName: "${System.getProperty('nexusUsername')}",
+                        password: "${System.getProperty('nexusPassword')}")
+            }
+            repository(url: "http://repository.activeeon.com/content/repositories/releases/") {
+                authentication(userName: "${System.getProperty('nexusUsername')}",
+                        password: "${System.getProperty('nexusPassword')}")
+            }
+        }
+    }
+}
