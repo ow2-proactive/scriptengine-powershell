@@ -3,7 +3,9 @@ apply plugin: 'application'
 apply plugin: 'idea'
 apply plugin: 'maven'
 
-sourceCompatibility = '1.7'
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_8
+
 mainClassName = 'jsr223.powershell.Main'
 defaultTasks 'installApp'
 
