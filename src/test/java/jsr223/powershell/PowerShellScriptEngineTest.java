@@ -61,8 +61,9 @@ public class PowerShellScriptEngineTest {
         assertTrue("Script standard output should contain the messages written by Write-Verbose cmdlet", scriptOutput.toString().contains(verboseMessage));
     }
 
-    @Test(expected = ScriptException.class)
-    public void testWriteHostIsNotSupported() throws Exception {
+    @Test
+    public void testWriteHostIsNowSupported() throws Exception {
+        // apparently it is used to be not supported.
         String message = "Blabla!";
         scriptEngine.eval("Write-Host " + message);
     }
