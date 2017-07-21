@@ -9,11 +9,11 @@
 //------------------------------------------------------------------------------
 
 namespace System.Collections {
-    
-    
-    #region Component Designer generated code 
+
+
+    #region Component Designer generated code
     public partial class Hashtable_ {
-        
+
         public static global::java.lang.Class _class {
             get {
                 return global::System.Collections.@__Hashtable.staticClass;
@@ -21,22 +21,22 @@ namespace System.Collections {
         }
     }
     #endregion
-    
-    #region Component Designer generated code 
+
+    #region Component Designer generated code
     [global::net.sf.jni4net.attributes.JavaProxyAttribute(typeof(global::System.Collections.Hashtable), typeof(global::System.Collections.Hashtable_))]
     [global::net.sf.jni4net.attributes.ClrWrapperAttribute(typeof(global::System.Collections.Hashtable), typeof(global::System.Collections.Hashtable_))]
     internal sealed partial class @__Hashtable : global::java.lang.Object {
-        
+
         internal new static global::java.lang.Class staticClass;
-        
-        private @__Hashtable(global::net.sf.jni4net.jni.JNIEnv @__env) : 
+
+        private @__Hashtable(global::net.sf.jni4net.jni.JNIEnv @__env) :
                 base(@__env) {
         }
-        
+
         private static void InitJNI(global::net.sf.jni4net.jni.JNIEnv @__env, java.lang.Class @__class) {
             global::System.Collections.@__Hashtable.staticClass = @__class;
         }
-        
+
         private static global::System.Collections.Generic.List<global::net.sf.jni4net.jni.JNINativeMethod> @__Init(global::net.sf.jni4net.jni.JNIEnv @__env, global::java.lang.Class @__class) {
             global::System.Type @__type = typeof(__Hashtable);
             global::System.Collections.Generic.List<global::net.sf.jni4net.jni.JNINativeMethod> methods = new global::System.Collections.Generic.List<global::net.sf.jni4net.jni.JNINativeMethod>();
@@ -82,7 +82,7 @@ namespace System.Collections {
                         ""));
             return methods;
         }
-        
+
         private static global::net.sf.jni4net.utils.JniHandle GetEnumerator0(global::System.IntPtr @__envp, global::net.sf.jni4net.utils.JniLocalHandle @__obj) {
             // ()Lsystem/collections/IEnumerator;
             // ()LSystem/Collections/IEnumerator;

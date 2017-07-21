@@ -15,7 +15,10 @@ import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,35 +27,42 @@ import java.util.Map;
 
 import static jsr223.powershell.CSharpJavaConverter.convertCSharpObjectToJavaObject;
 
+import org.apache.commons.io.IOUtils;
+import org.ow2.proactive.scheduler.common.SchedulerConstants;
+import org.ow2.proactive.scheduler.common.task.flow.FlowScript;
+import org.ow2.proactive.scripting.SelectionScript;
+import org.ow2.proactive.scripting.TaskScript;
+
 public class PowerShellScriptEngine extends AbstractScriptEngine {
 
     private final PowerShellCachedCaller psCaller;
 
     public PowerShellScriptEngine() {
-        File jsr223dll = this.initAndFindDll();
-        this.psCaller = new PowerShellCachedCaller(jsr223dll);
+        this.psCaller =  PowerShellCachedCaller.getInstance();
     }
 
     @Override
     public Object eval(String script, ScriptContext context) throws ScriptException {
-        system.Object powerShellInstance = null;
+
+        PowerShellCachedCaller.PowerShellEnvironment environment = null;
         try {
-            powerShellInstance = psCaller.createNewPowerShellInstance();
+            environment = psCaller.createNewPowerShellInstance(context);
 
             final ScriptException[] error = {null};
 
-            addStreamsHandler(powerShellInstance, error, context);
+            addStreamsHandler(environment.getPowershell(), error, context);
 
-            addProActivePropertiesAsScriptBindings(context);
-            addScriptBindings(context, powerShellInstance);
+            addScriptBindings(context, environment.getPowershell());
 
-            psCaller.addScript(powerShellInstance, script, getScriptArguments(context));
+            psCaller.addScript(environment.getPowershell(), script, getScriptArguments(context));
 
-            system.Object scriptResults = psCaller.invoke(powerShellInstance);
+            system.Object scriptResults = psCaller.invoke(environment.getPowershell());
 
             List<Object> resultAsList = convertResultToJava((IEnumerable) scriptResults);
 
-            addScriptEngineVariablesToEngine(psCaller, powerShellInstance, context);
+            displayResults(resultAsList, environment);
+
+            readOutputVariablesFromEngine(psCaller, environment.getPowershell(), context);
 
             if (error[0] != null) {
                 throw error[0];
@@ -66,27 +76,46 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
                 return resultAsList;
             }
         } finally {
-            if (powerShellInstance != null) {
-                psCaller.dispose(powerShellInstance);
+            if (environment.getRunspace() != null) {
+                psCaller.closeRunspace(environment.getRunspace());
+            }
+            if (environment.getPowershell() != null) {
+                psCaller.dispose(environment.getPowershell());
+            }
+            environment.getOutStream().flush();
+            environment.getErrStream().flush();
+        }
+    }
+
+    private void displayResults(List<Object> resultAsList, PowerShellCachedCaller.PowerShellEnvironment environment) {
+        if (resultAsList != null) {
+            for (Object object : resultAsList) {
+                environment.getOutStream().println(object);
             }
         }
     }
 
     private system.Object getScriptArguments(ScriptContext context) throws ScriptException {
-        Object argsFromBinding = context.getBindings(ScriptContext.ENGINE_SCOPE).get("args");
+        Object argsFromBinding = context.getBindings(ScriptContext.ENGINE_SCOPE).get(TaskScript.ARGUMENTS_NAME);
         return CSharpJavaConverter.convertJavaObjectToCSharpObject(psCaller, argsFromBinding);
     }
 
     @SuppressWarnings("unchecked")
-    private void addScriptEngineVariablesToEngine(PowerShellCachedCaller psCaller, system.Object ps, ScriptContext context) {
-        readBindingFromPowerShellContext(psCaller, ps, context, "result");
-        readBindingFromPowerShellContext(psCaller, ps, context, "selected");
-        readBindingFromPowerShellContext(psCaller, ps, context, "command");
-        readBindingFromPowerShellContext(psCaller, ps, context, "branch");
-        Object variablesFromScheduler = context.getAttribute("variables");
-        if (variablesFromScheduler instanceof Map) {
+    private void readOutputVariablesFromEngine(PowerShellCachedCaller psCaller, system.Object ps, ScriptContext context) {
+        readBindingFromPowerShellContext(psCaller, ps, context, TaskScript.RESULT_VARIABLE);
+        readBindingFromPowerShellContext(psCaller, ps, context, SelectionScript.RESULT_VARIABLE);
+        readBindingFromPowerShellContext(psCaller, ps, context, FlowScript.branchSelectionVariable);
+        readBindingFromPowerShellContext(psCaller, ps, context, FlowScript.replicateRunsVariable);
+        readBindingFromPowerShellContext(psCaller, ps, context, FlowScript.loopVariable);
+        updateVariableBindings(psCaller, ps, context, SchedulerConstants.VARIABLES_BINDING_NAME);
+        updateVariableBindings(psCaller, ps, context, SchedulerConstants.RESULT_METADATA_VARIABLE);
+    }
+
+    private void updateVariableBindings(PowerShellCachedCaller psCaller, system.Object ps, ScriptContext context, String bindingName) {
+        Object variablesFromScheduler = context.getAttribute(bindingName);
+        if (variablesFromScheduler != null && variablesFromScheduler instanceof Map) {
             Map variablesMapFromScheduler = (Map) variablesFromScheduler;
-            Object variablesFromScript = convertCSharpObjectToJavaObject(psCaller.getVariables(ps, "variables"));
+            Object variablesFromScript = convertCSharpObjectToJavaObject(psCaller.getVariables(ps, bindingName));
             if (variablesFromScript instanceof Map) {
                 variablesMapFromScheduler.clear();
                 variablesMapFromScheduler.putAll((Map) variablesFromScript);
@@ -98,22 +127,6 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         Object binding = convertCSharpObjectToJavaObject(psCaller.getVariables(ps, bindingName));
         if (binding != null) {
             context.setAttribute(bindingName, binding, ScriptContext.ENGINE_SCOPE);
-        }
-    }
-
-    private void addProActivePropertiesAsScriptBindings(ScriptContext context) {
-        addSystemPropertyAsScriptBinding(context, "pasJobId", "pas.job.id");
-        addSystemPropertyAsScriptBinding(context, "pasJobName", "pas.job.name");
-        addSystemPropertyAsScriptBinding(context, "pasTaskId", "pas.task.id");
-        addSystemPropertyAsScriptBinding(context, "pasTaskName", "pas.task.name");
-        addSystemPropertyAsScriptBinding(context, "pasTaskIteration", "pas.task.iteration");
-        addSystemPropertyAsScriptBinding(context, "pasTaskReplication", "pas.task.replication");
-    }
-
-    private void addSystemPropertyAsScriptBinding(ScriptContext context, String bindingName, String systemPropertyName) {
-        String systemProperty = System.getProperty(systemPropertyName);
-        if (systemProperty != null) {
-            context.setAttribute(bindingName, systemProperty, ScriptContext.ENGINE_SCOPE);
         }
     }
 
@@ -145,16 +158,6 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
     }
 
     private void addStreamsHandler(system.Object ps, final ScriptException[] error, final ScriptContext context) {
-        EventHandler outputHandler = new EventHandler() {
-            public void Invoke(system.Object sender, EventArgs e) {
-                Writer debugOutput = context.getWriter();
-                String debugMessage = getMessageFromEvent(sender);
-                try {
-                    debugOutput.append(debugMessage);
-                } catch (IOException ignored) {
-                }
-            }
-        };
 
         EventHandler errorHandler = new EventHandler() {
             public void Invoke(system.Object sender, EventArgs e) {
@@ -163,21 +166,28 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
                 try {
                     error[0] = new ScriptException(errorMessage);
                     errorOutput.append(errorMessage);
+                    errorOutput.flush();
+
                 } catch (IOException ignored) {
                 }
             }
         };
 
-        psCaller.addHandlers(ps, errorHandler, outputHandler, outputHandler);
+        psCaller.addHandlers(ps, errorHandler);
     }
 
     private String getMessageFromEvent(system.Object sender) {
         try {
+            StringBuilder stringBuilder = new StringBuilder();
             IList ll = Bridge.cast(sender, IList.class);
-            system.Object value = ll.getItem(0);
-            String errorMessage = value.toString();
-            ll.RemoveAt(0);
-            return errorMessage;
+            int count = ll.getCount();
+            for (int i = 0; i < count; i++) {
+                system.Object value = ll.getItem(i);
+                stringBuilder.append(value.toString());
+                stringBuilder.append(System.lineSeparator());
+            }
+
+            return stringBuilder.toString();
         } catch (Exception ex) {
             return ex.getMessage();
         }
@@ -185,7 +195,11 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
 
     @Override
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
-        return eval(IOUtils.toString(reader), context);
+        try {
+            return eval(IOUtils.toString(reader), context);
+        } catch (IOException e) {
+            throw new ScriptException(e);
+        }
     }
 
     @Override
@@ -198,22 +212,6 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         return new PowerShellScriptEngineFactory();
     }
 
-    private File initAndFindDll() {
-        try {
-            // create bridge, with default setup
-            // it will lookup jni4net.n.dll next to jni4net.j.jar
-            boolean isDebug = System.getProperty("powershell.debug") != null && Boolean.parseBoolean(System.getProperty("powershell.debug"));
-            Bridge.setDebug(isDebug);
-            Bridge.setVerbose(isDebug);
-            Bridge.init();
 
-            // Get directory that contains the jni4net.jar
-            URL jni4netJarURL = Bridge.class.getProtectionDomain().getCodeSource().getLocation();
-            File jni4netJarFile = new File(jni4netJarURL.toURI());
-            return new File(jni4netJarFile.getParentFile(), "jsr223utils.dll");
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to initialize the jn4net Bridge", ex);
-        }
-    }
 
 }

@@ -34,6 +34,7 @@ repositories {
 
 configurations {
     provided
+    nativeLib
 }
 
 sourceSets {
@@ -49,14 +50,16 @@ idea {
 }
 
 dependencies {
-    provided "org.objectweb.proactive:programming-extension-dataspaces:${schedulingVersion}"
     provided "org.ow2.proactive:scheduler-api:${schedulingVersion}"
 
-    testRuntime "org.objectweb.proactive:programming-extension-dataspaces:${schedulingVersion}"
     testRuntime "org.ow2.proactive:scheduler-api:${schedulingVersion}"
 
-    // jni4net is not hosted on maven central, later put in in the activeeon repo
+    // jni4net requires jar and dll to be in the same directory, accordingly, it is difficult to use the maven jar artifact
     compile files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
+    compile 'commons-io:commons-io:2.5'
+    compile 'org.apache.commons:commons-lang3:3.4'
+    compile 'log4j:log4j:1.2.17'
+    //compile 'net.sf.jni4net:jni4net.j:0.8.8.0'
 
     runtime files("${projectDir}/tools/jni4net.n-0.8.8.0.dll")
     runtime files("${projectDir}/tools/jni4net.n.w64.v40-0.8.8.0.dll")
@@ -65,8 +68,25 @@ dependencies {
     runtime files("${projectDir}/tools/jni4net.n.w32.v20-0.8.8.0.dll")
     runtime files("${projectDir}/tools/jsr223utils.dll")
 
+    nativeLib files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
+    nativeLib files("${projectDir}/tools/jni4net.n-0.8.8.0.dll")
+    nativeLib files("${projectDir}/tools/jni4net.n.w64.v40-0.8.8.0.dll")
+    nativeLib files("${projectDir}/tools/jni4net.n.w32.v40-0.8.8.0.dll")
+    nativeLib files("${projectDir}/tools/jni4net.n.w64.v20-0.8.8.0.dll")
+    nativeLib files("${projectDir}/tools/jni4net.n.w32.v20-0.8.8.0.dll")
+    nativeLib files("${projectDir}/tools/jsr223utils.dll")
+
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile 'com.google.guava:guava:19.0'
+}
+
+task nativeLibJar(type: Jar) {
+    classifier = 'native'
+    from configurations.nativeLib
+}
+
+artifacts {
+    archives nativeLibJar
 }
 
 // Upload the archives to the nexus repository. For execution, that needs to have

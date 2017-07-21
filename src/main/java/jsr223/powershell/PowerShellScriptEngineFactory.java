@@ -7,28 +7,28 @@ package jsr223.powershell;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
+import javax.script.ScriptException;
+
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
+
 public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     private static final String NAME = "PowerShell";
+
     private static final String ENGINE = "PowerShell interpreter";
-    private static final String ENGINE_VERSION = "3";
+
     private static final String LANGUAGE = "PowerShell";
-    private static final String LANGUAGE_VERSION = "3";
 
-    private static final Map<String, Object> PARAMETERS = new HashMap<String, Object>();
+    private static final Logger logger = Logger.getLogger(PowerShellScriptEngineFactory.class);
 
-    static {
-        PARAMETERS.put(ScriptEngine.NAME, NAME);
-        PARAMETERS.put(ScriptEngine.ENGINE, ENGINE);
-        PARAMETERS.put(ScriptEngine.ENGINE_VERSION, ENGINE_VERSION);
-        PARAMETERS.put(ScriptEngine.LANGUAGE, LANGUAGE);
-        PARAMETERS.put(ScriptEngine.LANGUAGE_VERSION, LANGUAGE_VERSION);
-    }
+    private static String engineVersion;
 
     @Override
     public String getEngineName() {
@@ -37,7 +37,7 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public String getEngineVersion() {
-        return ENGINE_VERSION;
+        return findEngineVersion();
     }
 
     @Override
@@ -47,8 +47,12 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public List<String> getMimeTypes() {
-        return Arrays.asList("application/x-powershell", "application/x-ps1", "application/ps1",
-                "application/x-powershell-program", "application/textedit", "application/octet-stream");
+        return Arrays.asList("application/x-powershell",
+                             "application/x-ps1",
+                             "application/ps1",
+                             "application/x-powershell-program",
+                             "application/textedit",
+                             "application/octet-stream");
     }
 
     @Override
@@ -63,12 +67,25 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public String getLanguageVersion() {
-        return LANGUAGE_VERSION;
+        return getEngineVersion();
     }
 
     @Override
     public Object getParameter(String key) {
-        return PARAMETERS.get(key);
+        switch (key) {
+            case ScriptEngine.NAME:
+                return getEngineName();
+            case ScriptEngine.ENGINE:
+                return ENGINE;
+            case ScriptEngine.ENGINE_VERSION:
+                return getEngineVersion();
+            case ScriptEngine.LANGUAGE:
+                return getLanguageName();
+            case ScriptEngine.LANGUAGE_VERSION:
+                return getLanguageVersion();
+            default:
+                return null;
+        }
     }
 
     @Override
@@ -97,5 +114,21 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
     @Override
     public ScriptEngine getScriptEngine() {
         return new PowerShellScriptEngine();
+    }
+
+    private String findEngineVersion() {
+        if (engineVersion == null) {
+            try (StringWriter output = new StringWriter(); StringWriter error = new StringWriter()) {
+                ScriptEngine engine = getScriptEngine();
+                engine.getContext().setWriter(output);
+                engine.getContext().setErrorWriter(error);
+                int engineVersionNumeric = (int) engine.eval("$PSVersionTable.PSVersion.Major");
+                engineVersion = "" + engineVersionNumeric;
+            } catch (Exception e) {
+                logger.warn("Unable to load powershell script engine and determine version", e);
+                return "0";
+            }
+        }
+        return engineVersion;
     }
 }

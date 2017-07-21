@@ -11,214 +11,214 @@ package system.collections;
 
 @net.sf.jni4net.attributes.ClrType
 public class Hashtable extends system.Object implements system.collections.ICollection, system.collections.IDictionary, system.runtime.serialization.ISerializable, system.ICloneable {
-    
+
     //<generated-proxy>
     private static system.Type staticType;
-    
+
     protected Hashtable(net.sf.jni4net.inj.INJEnv __env, long __handle) {
             super(__env, __handle);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("()V")
     public Hashtable() {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable0(this);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(I)V")
     public Hashtable(int capacity) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable1(this, capacity);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(IF)V")
     public Hashtable(int capacity, float loadFactor) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable2(this, capacity, loadFactor);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(IFLSystem/Collections/IHashCodeProvider;LSystem/Collections/IComparer;)V")
     public Hashtable(int capacity, float loadFactor, system.Object hcp, system.Object comparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable3(this, capacity, loadFactor, hcp, comparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(IFLSystem/Collections/IEqualityComparer;)V")
     public Hashtable(int capacity, float loadFactor, system.Object equalityComparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable4(this, capacity, loadFactor, equalityComparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IHashCodeProvider;LSystem/Collections/IComparer;)V")
     public Hashtable(system.Object hcp, system.Object comparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable5(this, hcp, comparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IEqualityComparer;)V")
     public Hashtable(system.Object equalityComparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable6(this, equalityComparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(ILSystem/Collections/IHashCodeProvider;LSystem/Collections/IComparer;)V")
     public Hashtable(int capacity, system.Object hcp, system.Object comparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable7(this, capacity, hcp, comparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(ILSystem/Collections/IEqualityComparer;)V")
     public Hashtable(int capacity, system.Object equalityComparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable8(this, capacity, equalityComparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IDictionary;)V")
     public Hashtable(system.collections.IDictionary d) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable9(this, d);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IDictionary;F)V")
     public Hashtable(system.collections.IDictionary d, float loadFactor) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable10(this, d, loadFactor);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IDictionary;LSystem/Collections/IHashCodeProvider;LSystem/Collections/IComparer;)V")
     public Hashtable(system.collections.IDictionary d, system.Object hcp, system.Object comparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable11(this, d, hcp, comparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IDictionary;LSystem/Collections/IEqualityComparer;)V")
     public Hashtable(system.collections.IDictionary d, system.Object equalityComparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable12(this, d, equalityComparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IDictionary;FLSystem/Collections/IHashCodeProvider;LSystem/Collections/IComparer;)V")
     public Hashtable(system.collections.IDictionary d, float loadFactor, system.Object hcp, system.Object comparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable13(this, d, loadFactor, hcp, comparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrConstructor("(LSystem/Collections/IDictionary;FLSystem/Collections/IEqualityComparer;)V")
     public Hashtable(system.collections.IDictionary d, float loadFactor, system.Object equalityComparer) {
             super(((net.sf.jni4net.inj.INJEnv)(null)), 0);
         system.collections.Hashtable.__ctorHashtable14(this, d, loadFactor, equalityComparer);
     }
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()V")
     private native static void __ctorHashtable0(net.sf.jni4net.inj.IClrProxy thiz);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(I)V")
     private native static void __ctorHashtable1(net.sf.jni4net.inj.IClrProxy thiz, int capacity);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(IF)V")
     private native static void __ctorHashtable2(net.sf.jni4net.inj.IClrProxy thiz, int capacity, float loadFactor);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(IFLsystem/Object;Lsystem/Object;)V")
     private native static void __ctorHashtable3(net.sf.jni4net.inj.IClrProxy thiz, int capacity, float loadFactor, system.Object hcp, system.Object comparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(IFLsystem/Object;)V")
     private native static void __ctorHashtable4(net.sf.jni4net.inj.IClrProxy thiz, int capacity, float loadFactor, system.Object equalityComparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/Object;Lsystem/Object;)V")
     private native static void __ctorHashtable5(net.sf.jni4net.inj.IClrProxy thiz, system.Object hcp, system.Object comparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/Object;)V")
     private native static void __ctorHashtable6(net.sf.jni4net.inj.IClrProxy thiz, system.Object equalityComparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(ILsystem/Object;Lsystem/Object;)V")
     private native static void __ctorHashtable7(net.sf.jni4net.inj.IClrProxy thiz, int capacity, system.Object hcp, system.Object comparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(ILsystem/Object;)V")
     private native static void __ctorHashtable8(net.sf.jni4net.inj.IClrProxy thiz, int capacity, system.Object equalityComparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/collections/IDictionary;)V")
     private native static void __ctorHashtable9(net.sf.jni4net.inj.IClrProxy thiz, system.collections.IDictionary d);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/collections/IDictionary;F)V")
     private native static void __ctorHashtable10(net.sf.jni4net.inj.IClrProxy thiz, system.collections.IDictionary d, float loadFactor);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/collections/IDictionary;Lsystem/Object;Lsystem/Object;)V")
     private native static void __ctorHashtable11(net.sf.jni4net.inj.IClrProxy thiz, system.collections.IDictionary d, system.Object hcp, system.Object comparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/collections/IDictionary;Lsystem/Object;)V")
     private native static void __ctorHashtable12(net.sf.jni4net.inj.IClrProxy thiz, system.collections.IDictionary d, system.Object equalityComparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/collections/IDictionary;FLsystem/Object;Lsystem/Object;)V")
     private native static void __ctorHashtable13(net.sf.jni4net.inj.IClrProxy thiz, system.collections.IDictionary d, float loadFactor, system.Object hcp, system.Object comparer);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(Lsystem/collections/IDictionary;FLsystem/Object;)V")
     private native static void __ctorHashtable14(net.sf.jni4net.inj.IClrProxy thiz, system.collections.IDictionary d, float loadFactor, system.Object equalityComparer);
-    
+
 
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Array;I)V")
     public native void CopyTo(system.Array array, int index);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()I")
     public native int getCount();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()LSystem/Object;")
     public native system.Object getSyncRoot();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()Z")
     public native boolean isSynchronized();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;)LSystem/Object;")
     public native system.Object getItem(system.Object key);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;LSystem/Object;)V")
     public native void setItem(system.Object key, system.Object value);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()LSystem/Collections/ICollection;")
     public native system.collections.ICollection getKeys();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()LSystem/Collections/ICollection;")
     public native system.collections.ICollection getValues();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;)Z")
     public native boolean Contains(system.Object key);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;LSystem/Object;)V")
     public native void Add(system.Object key, system.Object value);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()V")
     public native void Clear();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()Z")
     public native boolean isReadOnly();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()Z")
     public native boolean isFixedSize();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;)V")
     public native void Remove(system.Object key);
 
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Runtime/Serialization/SerializationInfo;LSystem/Runtime/Serialization/StreamingContext;)V")
     public native void GetObjectData(system.runtime.serialization.SerializationInfo info, system.runtime.serialization.StreamingContext context);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;)V")
     public native void OnDeserialization(system.Object sender);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("()LSystem/Object;")
     public native system.Object Clone();
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;)Z")
     public native boolean ContainsKey(system.Object key);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Object;)Z")
     public native boolean ContainsValue(system.Object value);
-    
+
     @net.sf.jni4net.attributes.ClrMethod("(LSystem/Collections/Hashtable;)LSystem/Collections/Hashtable;")
     public native static system.collections.Hashtable Synchronized(system.collections.Hashtable table);
-    
+
     public static system.Type typeof() {
         return system.collections.Hashtable.staticType;
     }
-    
+
     private static void InitJNI(net.sf.jni4net.inj.INJEnv env, system.Type staticType) {
         system.collections.Hashtable.staticType = staticType;
     }

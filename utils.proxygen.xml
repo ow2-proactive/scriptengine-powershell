@@ -29,6 +29,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <AssemblyReference Assembly="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"/>
   <!--<AssemblyReference Assembly="tools/jsr223utils.dll"/>-->
 
+  <!-- ClassPath entries -->
+  <ClassPath Path="build/classes/main"/>
+
   <!-- List of CLR types which should have proxy generated -->
   <ClrType TypeName="System.EventHandler"/>
   <ClrType TypeName="System.EventArgs"/>
@@ -45,6 +48,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <!--<ClrType TypeName="System.UInt16"/>-->
   <!--<ClrType TypeName="System.SByte"/>-->
   <ClrType TypeName="System.Collections.ArrayList"/>
+  <!-- WARNING: Proxy generation from Hashtable does not work very well, it makes Hashtable implements system.collections.IEnumerable and not system.collections.IDictionary,
+  please re-fetch the repository version of the generated Hashtable class when regenerating proxies -->
   <ClrType TypeName="System.Collections.Hashtable"/>
   <!--<ClrType TypeName="System.IO.StringWriter"/>-->
   <!--<ClrType TypeName="utils.PSUtils"/>-->
