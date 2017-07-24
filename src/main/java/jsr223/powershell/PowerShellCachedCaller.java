@@ -19,12 +19,16 @@ import javax.script.ScriptContext;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.apache.commons.io.output.WriterOutputStream;
 
+
 // Load all required standard and utils types
 // Then performs calls on .Net objects by reflection
 class PowerShellCachedCaller {
 
-    public final Type[] EMPTY_TYPE_ARRAY = new Type[]{};
-    public final Type HandlerUtils, Int32, String, PowerShell, PSDataStreams, Runspace, DataAddedEventArgs, Object, PrintStream;
+    public final Type[] EMPTY_TYPE_ARRAY = new Type[] {};
+
+    public final Type HandlerUtils, Int32, String, PowerShell, PSDataStreams, Runspace, DataAddedEventArgs, Object,
+            Hashtable, VariablesMap, PrintStream;
+
     public final Type IList;
 
     static PowerShellCachedCaller instance;
@@ -43,8 +47,10 @@ class PowerShellCachedCaller {
         Int32 = Type.GetType("System.Int32");
         String = Type.GetType("System.String");
         IList = Type.GetType("System.Collections.IList");
+        Hashtable = Type.GetType("System.Collections.Hashtable");
         Object = Type.GetType("System.Object");
         HandlerUtils = wfAssembly.GetType("utils.HandlerUtils");
+        VariablesMap = wfAssembly.GetType("utils.VariablesMap");
 
         PrintStream = Type.GetType("java.io.PrintStream");
 
@@ -61,7 +67,8 @@ class PowerShellCachedCaller {
         try {
             // create bridge, with default setup
             // it will lookup jni4net.n.dll next to jni4net.j.jar
-            boolean isDebug = System.getProperty("powershell.debug") != null && Boolean.parseBoolean(System.getProperty("powershell.debug"));
+            boolean isDebug = System.getProperty("powershell.debug") != null &&
+                              Boolean.parseBoolean(System.getProperty("powershell.debug"));
             Bridge.setDebug(isDebug);
             Bridge.setVerbose(isDebug);
             Bridge.init();
@@ -79,11 +86,15 @@ class PowerShellCachedCaller {
     public synchronized PowerShellEnvironment createNewPowerShellInstance(ScriptContext context) {
 
         PrintStream outStream = new PrintStream(new WriterOutputStream(context.getWriter(), Charset.defaultCharset()));
-        PrintStream errStream = new PrintStream(new WriterOutputStream(context.getErrorWriter(), Charset.defaultCharset()));
-
+        PrintStream errStream = new PrintStream(new WriterOutputStream(context.getErrorWriter(),
+                                                                       Charset.defaultCharset()));
 
         system.Object ps = PowerShell.GetMethod("Create", EMPTY_TYPE_ARRAY).Invoke(null, null);
-        system.Object runSpace = HandlerUtils.GetMethod("CreateRunspaceAndAttachToPowerShell", new Type[] {PowerShell, PrintStream, PrintStream}).Invoke(null, new system.Object[]{ps, Bridge.wrapJVM(outStream), Bridge.wrapJVM(errStream)});
+        system.Object runSpace = HandlerUtils.GetMethod("CreateRunspaceAndAttachToPowerShell",
+                                                        new Type[] { PowerShell, PrintStream, PrintStream })
+                                             .Invoke(null,
+                                                     new system.Object[] { ps, Bridge.wrapJVM(outStream),
+                                                                           Bridge.wrapJVM(errStream) });
 
         return new PowerShellEnvironment(ps, runSpace, outStream, errStream);
     }
@@ -92,10 +103,8 @@ class PowerShellCachedCaller {
         Runspace.GetMethod("Close", EMPTY_TYPE_ARRAY).Invoke(runspace, null);
     }
 
-
-
     public synchronized void addHandlers(system.Object pslInstance, EventHandler err) {
-        HandlerUtils.GetMethod("AddErrorHandler").Invoke(null, new system.Object[]{pslInstance, err});
+        HandlerUtils.GetMethod("AddErrorHandler").Invoke(null, new system.Object[] { pslInstance, err });
     }
 
     public system.Object toBool(String bool) {
@@ -123,20 +132,55 @@ class PowerShellCachedCaller {
     }
 
     public system.Object toSomething(String methodName, String value) {
-        return HandlerUtils.GetMethod(methodName).Invoke(null, new system.Object[]{new system.String(value)});
+        return HandlerUtils.GetMethod(methodName).Invoke(null, new system.Object[] { new system.String(value) });
+    }
+
+    public system.Object fromDataContractXMLToObject(String json) {
+        return HandlerUtils.GetMethod("DeserializeWithNetDcs").Invoke(null,
+                                                                      new system.Object[] { new system.String(json) });
+    }
+
+    public String fromObjectToDataContractXML(system.Object object) {
+        return Bridge.convert((system.String) HandlerUtils.GetMethod("SerializeWithNetDcs")
+                                                          .Invoke(null, new system.Object[] { object }));
+    }
+
+    public system.Object createVariablesMap(system.collections.Hashtable inheritedMap,
+            system.collections.Hashtable scopeMap, system.collections.Hashtable scriptMap) {
+        return HandlerUtils.GetMethod("createVariablesMap")
+                           .Invoke(null, new system.Object[] { inheritedMap, scopeMap, scriptMap });
+    }
+
+    public system.collections.Hashtable getInheritedMap(system.Object variablesMap) {
+        return (system.collections.Hashtable) HandlerUtils.GetMethod("getInheritedMap")
+                                                          .Invoke(null, new Object[] { variablesMap });
+    }
+
+    public system.collections.Hashtable getScopeMap(system.Object variablesMap) {
+        return (system.collections.Hashtable) HandlerUtils.GetMethod("getScopeMap")
+                                                          .Invoke(null, new Object[] { variablesMap });
+    }
+
+    public system.collections.Hashtable getScriptMap(system.Object variablesMap) {
+        return (system.collections.Hashtable) HandlerUtils.GetMethod("getScriptMap")
+                                                          .Invoke(null, new Object[] { variablesMap });
     }
 
     public void addScript(system.Object psInstance, String script, system.Object args) {
-        PowerShell.GetMethod("AddScript", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String(script)});
+        PowerShell.GetMethod("AddScript", new Type[] { String })
+                  .Invoke(psInstance, new system.Object[] { new system.String(script) });
         if (args != null) {
-            PowerShell.GetMethod("AddParameters", new Type[]{IList}).Invoke(psInstance, new system.Object[]{args});
+            PowerShell.GetMethod("AddParameters", new Type[] { IList }).Invoke(psInstance,
+                                                                               new system.Object[] { args });
         }
     }
 
     public void setVariable(system.Object psInstance, java.lang.String variableName, system.Object variableValue) {
-        PowerShell.GetMethod("AddCommand", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String("set-variable")});
-        PowerShell.GetMethod("AddArgument", new Type[]{String}).Invoke(psInstance, new system.Object[]{new system.String(variableName)});
-        PowerShell.GetMethod("AddArgument").Invoke(psInstance, new system.Object[]{variableValue});
+        PowerShell.GetMethod("AddCommand", new Type[] { String })
+                  .Invoke(psInstance, new system.Object[] { new system.String("set-variable") });
+        PowerShell.GetMethod("AddArgument", new Type[] { String })
+                  .Invoke(psInstance, new system.Object[] { new system.String(variableName) });
+        PowerShell.GetMethod("AddArgument").Invoke(psInstance, new system.Object[] { variableValue });
     }
 
     public system.Object invoke(system.Object psInstance) {
@@ -159,17 +203,21 @@ class PowerShellCachedCaller {
     }
 
     public system.Object getVariables(system.Object psInstance, String name) {
-        return HandlerUtils.GetMethod("GetVariable").Invoke(null, new system.Object[]{psInstance, new system.String(name)});
+        return HandlerUtils.GetMethod("GetVariable")
+                           .Invoke(null, new system.Object[] { psInstance, new system.String(name) });
     }
 
     public static class PowerShellEnvironment {
         system.Object powershell;
+
         system.Object runspace;
 
         PrintStream outStream;
+
         PrintStream errStream;
 
-        public PowerShellEnvironment(system.Object powershell, system.Object runspace, PrintStream outStream, PrintStream errStream) {
+        public PowerShellEnvironment(system.Object powershell, system.Object runspace, PrintStream outStream,
+                PrintStream errStream) {
             this.powershell = powershell;
             this.runspace = runspace;
             this.outStream = outStream;

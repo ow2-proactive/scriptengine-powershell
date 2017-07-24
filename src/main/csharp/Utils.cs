@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Host;
 using System.Management.Automation.Runspaces;
 using System.Security;
 using System.Threading;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Collections;
 
 namespace utils
 {
@@ -78,6 +81,55 @@ namespace utils
             return System.Char.Parse(value);
         }
 
+        public static VariablesMap createVariablesMap(Hashtable inheritedMap, Hashtable scopeMap, Hashtable scriptMap)
+        {
+            return new VariablesMap(inheritedMap, scopeMap, scriptMap);
+        }
+
+        public static Hashtable getInheritedMap(VariablesMap map)
+        {
+            return map.InheritedMap;
+        }
+
+        public static Hashtable getScopeMap(VariablesMap map)
+        {
+            return map.ScopeMap;
+        }
+
+        public static Hashtable getScriptMap(VariablesMap map)
+        {
+            return map.ScriptMap;
+        }
+
+        public static string SerializeWithNetDcs(object obj)
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var sr = new StreamReader(ms, Encoding.UTF8))
+                {
+                    var serializer = new NetDataContractSerializer();
+                    serializer.WriteObject(ms, obj);
+                    ms.Position = 0;
+                    return sr.ReadToEnd();
+                }
+            }
+        }
+
+        public static object DeserializeWithNetDcs(string xml)
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var sw = new StreamWriter(ms, Encoding.UTF8))
+                {
+                    sw.Write(xml);
+                    sw.Flush();
+                    ms.Position = 0;
+                    var deserializer = new NetDataContractSerializer();
+                    return deserializer.ReadObject(ms);
+                }
+            }
+        }
+
         public static Runspace CreateRunspaceAndAttachToPowerShell(PowerShell ps, java.io.PrintStream outStream, java.io.PrintStream errStream)
         {
             JVMPSHostUserInterface ui = new JVMPSHostUserInterface(outStream, errStream);
@@ -86,6 +138,174 @@ namespace utils
             ps.Runspace = jvm_Runspace;
             jvm_Runspace.Open();
             return jvm_Runspace;
+        }
+
+    }
+
+    class VariablesMap : Hashtable
+    {
+        private Hashtable inheritedMap;
+        private Hashtable scopeMap;
+        private Hashtable scriptMap;
+
+        public VariablesMap(Hashtable inheritedMap, Hashtable scopeMap, Hashtable scriptMap)
+        {
+            this.inheritedMap = inheritedMap;
+            this.scopeMap = scopeMap;
+            this.scriptMap = scriptMap;      
+        }
+
+        public Hashtable InheritedMap
+        {
+            get
+            {
+                return inheritedMap;
+            }
+        }
+
+        public Hashtable ScopeMap
+        {
+            get
+            {
+                return scopeMap;
+            }
+
+        }
+
+        public Hashtable ScriptMap
+        {
+            get
+            {
+                return scriptMap;
+            }
+        }
+
+        public Hashtable PropagatedVariables
+        {
+            get
+            {
+                Hashtable variables = new Hashtable(inheritedMap);
+                foreach (DictionaryEntry item in scriptMap)
+                {
+                    variables[item.Key] = item.Value;
+                }
+                return variables;
+            }
+        }
+
+        public Hashtable MergedMap
+        {
+            get { 
+                Hashtable variables = new Hashtable(inheritedMap);
+                foreach (DictionaryEntry item in scopeMap)
+                {
+                    variables[item.Key] = item.Value;
+                }
+                foreach (DictionaryEntry item in scriptMap)
+                {
+                    variables[item.Key] = item.Value;
+                }          
+                return variables;
+            }
+        }
+
+        override
+        public void Add(object key, object value)
+        {
+            scriptMap.Add(key, value);          
+        }
+
+        public override int Count
+        {
+            get
+            {
+                return MergedMap.Count;
+            }
+        }
+
+        override
+        public bool ContainsKey(object key)
+        {
+            return MergedMap.ContainsKey(key);
+        }
+
+        override
+        public bool ContainsValue(object value)
+        {
+            return MergedMap.ContainsValue(value);
+        }
+
+        override
+        public object this[object key]
+        {
+            get
+            {
+                return MergedMap[key];
+            }
+            set
+            {
+                scriptMap[key] = value;
+            }
+        }
+
+        override
+        public void Remove(object key)
+        {
+            scriptMap.Remove(key);
+            scopeMap.Remove(key);
+            inheritedMap.Remove(key);
+        }
+
+        override
+        public void Clear()
+        {
+            scriptMap.Clear();
+            scopeMap.Clear();
+            inheritedMap.Clear();
+        }
+
+        override
+        public ICollection Keys {
+            get
+            {
+                return MergedMap.Keys;
+            }
+        }
+
+        override
+        public ICollection Values
+        {
+            get
+            {
+                return MergedMap.Values;
+            }
+        }
+
+        override
+        public string ToString()
+        {
+            return MergedMap.ToString();
+        }
+
+        override
+        public bool Equals(object o)
+        {
+            if (o is VariablesMap)
+            {
+                VariablesMap oVarMap = (VariablesMap)o;
+                return inheritedMap.Equals(oVarMap.inheritedMap) && scopeMap.Equals(oVarMap.scopeMap) && scriptMap.Equals(oVarMap.scriptMap);
+            }
+            else if (o is Hashtable)
+            {
+                return MergedMap.Equals(o);
+            }
+            else return false;
+        }
+
+        override
+        public int GetHashCode()
+        {
+            return MergedMap.GetHashCode();
         }
 
     }

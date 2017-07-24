@@ -1,10 +1,16 @@
 package jsr223.powershell;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.ow2.proactive.scheduler.common.SchedulerConstants;
+import org.ow2.proactive.scheduler.common.job.TaskFlowJob;
+import org.ow2.proactive.scheduler.task.utils.VariablesMap;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -13,7 +19,10 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
+import javax.xml.crypto.Data;
+
 import com.google.common.collect.Lists;
+
 
 // TODO add some null tests
 public class ScriptEngineBindingAndResultTest {
@@ -85,7 +94,7 @@ public class ScriptEngineBindingAndResultTest {
 
     @Test
     public void array() throws Exception {
-        scriptEngine.put("anArray", new Object[]{1, "abc", 4.2});
+        scriptEngine.put("anArray", new Object[] { 1, "abc", 4.2 });
         assertEquals(Lists.newArrayList(1, "abc", 4.2), scriptEngine.eval("return $anArray"));
         assertEquals(Lists.newArrayList(1, "abc", 4.2), scriptEngine.eval("Write-Output $anArray"));
         assertEquals(1, scriptEngine.eval("Write-Output $anArray[0]"));
@@ -94,7 +103,7 @@ public class ScriptEngineBindingAndResultTest {
 
     @Test
     public void script_args() throws Exception {
-        scriptEngine.put("args", new Object[]{"abc"});
+        scriptEngine.put("args", new Object[] { "abc" });
         assertEquals(asList("abc"), scriptEngine.eval("return ,$args"));
         assertEquals("abc", scriptEngine.eval("return $args")); // single element array is converted to its element automatically
         assertEquals("abc", scriptEngine.eval("return $args[0]"));
@@ -131,9 +140,54 @@ public class ScriptEngineBindingAndResultTest {
     @Test
     public void nested_map() throws Exception {
         scriptEngine.put("nestedMap", singletonMap("key", singletonMap("key", "value")));
-        assertEquals(singletonMap("key", singletonMap("key", "value")),
-                scriptEngine.eval("return $nestedMap"));
+        assertEquals(singletonMap("key", singletonMap("key", "value")), scriptEngine.eval("return $nestedMap"));
     }
 
-    // TODO single decimal datetime xml
+    @Test
+    public void other_object() throws Exception {
+        // tests that a PowerShell native object other than standard types can be serialized using DataContract, and reused
+        Object date = scriptEngine.eval("Get-Date");
+        Assert.assertTrue(date instanceof DataContractObject);
+        scriptEngine.put("aDate", date);
+        Object aDay = scriptEngine.eval("return $aDate.Day");
+        Assert.assertTrue(aDay instanceof Integer);
+        Assert.assertEquals(Calendar.getInstance().get(Calendar.DAY_OF_MONTH), aDay);
+    }
+
+    @Test
+    public void variables_map_bindings_and_conversion_error() throws Exception {
+        // tests that a java object which is not convertible to PowerShell is marked so, 
+        // and that the original java binding is preserved after the script execution
+        VariablesMap map = new VariablesMap();
+        map.getScopeMap().put("scopeVar", "value");
+        // we use a TaskFlowJob as a non-convertible object
+        TaskFlowJob job = new TaskFlowJob();
+        map.getInheritedMap().put("unconvertible", job);
+        scriptEngine.put(SchedulerConstants.VARIABLES_BINDING_NAME, map);
+
+        // this tests that we can use scope variable from the map
+        Object scopeVariable = scriptEngine.eval("$" + SchedulerConstants.VARIABLES_BINDING_NAME +
+                                                 ".Get_Item('scopeVar')");
+        Assert.assertTrue(scopeVariable instanceof String);
+        Assert.assertEquals("value", scopeVariable);
+
+        // we test that the scope variables are not propagated
+        Assert.assertNull(map.getPropagatedVariables().get("scopeVar"));
+
+        // we test that the script variables are propagated
+        scriptEngine.eval("$" + SchedulerConstants.VARIABLES_BINDING_NAME + ".Set_Item('newVar', 'newValue')");
+
+        Assert.assertNotNull(map.getPropagatedVariables().get("newVar"));
+
+        Assert.assertEquals("newValue", map.getPropagatedVariables().get("newVar"));
+
+        // we test that unconvertible variables are marked so, and that the initial value is not modified
+        Object unconvertibleVariable = scriptEngine.eval("$" + SchedulerConstants.VARIABLES_BINDING_NAME +
+                                                         ".Get_Item('unconvertible')");
+        Assert.assertTrue(unconvertibleVariable instanceof String);
+        Assert.assertTrue(((String) unconvertibleVariable).startsWith(CSharpJavaConverter.NOT_SUPPORTED_JAVA_OBJECT));
+        Assert.assertEquals(job, map.getPropagatedVariables().get("unconvertible"));
+        System.out.println(map);
+    }
+
 }

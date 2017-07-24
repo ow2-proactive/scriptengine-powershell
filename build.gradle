@@ -51,8 +51,10 @@ idea {
 
 dependencies {
     provided "org.ow2.proactive:scheduler-api:${schedulingVersion}"
+    provided "org.ow2.proactive:scheduler-node:${schedulingVersion}"
 
-    testRuntime "org.ow2.proactive:scheduler-api:${schedulingVersion}"
+    testCompile "org.ow2.proactive:scheduler-api:${schedulingVersion}"
+    testCompile "org.ow2.proactive:scheduler-node:${schedulingVersion}"
 
     // jni4net requires jar and dll to be in the same directory, accordingly, it is difficult to use the maven jar artifact
     compile files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
