@@ -113,19 +113,27 @@ public class PowerShellScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public ScriptEngine getScriptEngine() {
-        return new PowerShellScriptEngine();
+        try {
+            return new PowerShellScriptEngine();
+        } catch (Throwable e) {
+            throw new RuntimeException("Powershell Script engine is not available", e);
+        }
     }
 
     private String findEngineVersion() {
         if (engineVersion == null) {
             try (StringWriter output = new StringWriter(); StringWriter error = new StringWriter()) {
                 ScriptEngine engine = getScriptEngine();
-                engine.getContext().setWriter(output);
-                engine.getContext().setErrorWriter(error);
-                int engineVersionNumeric = (int) engine.eval("$PSVersionTable.PSVersion.Major");
-                engineVersion = "" + engineVersionNumeric;
-            } catch (Exception e) {
-                logger.warn("Unable to load powershell script engine and determine version", e);
+                if (engine != null) {
+                    engine.getContext().setWriter(output);
+                    engine.getContext().setErrorWriter(error);
+                    int engineVersionNumeric = (int) engine.eval("$PSVersionTable.PSVersion.Major");
+                    engineVersion = "" + engineVersionNumeric;
+                } else {
+                    return "0";
+                }
+            } catch (Throwable e) {
+                logger.debug("Unable to load powershell script engine and determine version", e);
                 return "0";
             }
         }
