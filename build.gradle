@@ -58,9 +58,9 @@ dependencies {
 
     // jni4net requires jar and dll to be in the same directory, accordingly, it is difficult to use the maven jar artifact
     compile files("${projectDir}/tools/jni4net.j-0.8.8.0.jar")
-    compile 'commons-io:commons-io:2.5'
-    compile 'org.apache.commons:commons-lang3:3.4'
-    compile 'log4j:log4j:1.2.17'
+    provided 'commons-io:commons-io:2.5'
+    provided 'org.apache.commons:commons-lang3:3.4'
+    provided 'log4j:log4j:1.2.17'
     //compile 'net.sf.jni4net:jni4net.j:0.8.8.0'
 
     runtime files("${projectDir}/tools/jni4net.n-0.8.8.0.dll")
