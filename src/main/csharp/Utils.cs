@@ -14,7 +14,7 @@ using System.Collections;
 
 namespace utils
 {
-    class HandlerUtils
+    public class HandlerUtils
     {
         public static void AddErrorHandler(PowerShell ps, System.EventHandler errorEvt)
         {
@@ -142,7 +142,7 @@ namespace utils
 
     }
 
-    class VariablesMap : Hashtable
+    public class VariablesMap : Hashtable
     {
         private Hashtable inheritedMap;
         private Hashtable scopeMap;
@@ -310,7 +310,7 @@ namespace utils
 
     }
 
-    class JVMPSHostUserInterface : PSHostUserInterface
+    public class JVMPSHostUserInterface : PSHostUserInterface
     {
 
         java.io.PrintStream outStream;
@@ -423,7 +423,7 @@ namespace utils
 
     }
 
-    class JVMPSHost : PSHost
+    public class JVMPSHost : PSHost
     {
 
         private Guid _hostId = Guid.NewGuid();
@@ -510,7 +510,7 @@ namespace utils
         }
     }
 
-    class PsUtils
+    public class PsUtils
     {
         public static Collection<PSObject> Run(PowerShell ps)
         {
