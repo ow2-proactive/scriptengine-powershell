@@ -23,19 +23,3 @@
  * If needed, contact us to obtain a release under GPL Version 2 or 3
  * or a different license than the AGPL.
  */
-package jsr223.powershell;
-
-import java.io.Serializable;
-
-
-/**
- * @author ActiveEon Team
- * @since 24/07/2017
- */
-public interface DataContractObject extends Serializable {
-
-    void setXMLValue(String jsonValue);
-
-    String getXMLValue();
-
-}

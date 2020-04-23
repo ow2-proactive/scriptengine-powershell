@@ -2,12 +2,40 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'idea'
 apply plugin: 'maven'
+apply from: "$rootDir/gradle/ext/coding-format.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_7
 targetCompatibility = JavaVersion.VERSION_1_8
 
 mainClassName = 'jsr223.powershell.Main'
 defaultTasks 'installApp'
+
+buildscript {
+    repositories {
+        if (project.hasProperty('local')) {
+            mavenLocal()
+        }
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        maven { url 'http://repository.activeeon.com/content/groups/proactive/' }
+    }
+
+    dependencies {
+        classpath "com.diffplug.gradle.spotless:spotless:2.4.0"
+        classpath "org.ow2.proactive:coding-rules:1.0.0"
+    }
+
+    dependencies {
+        delete "gradle/ext"
+        ant.unjar src: configurations.classpath.find { it.name.startsWith("coding-rules") }, dest: 'gradle/ext'
+    }
+}
+
+rootProject.buildscript.repositories.each {
+    repositories.add(it)
+}
 
 // Configure the maven repository deployment
 install {
@@ -19,17 +47,6 @@ install {
         // Give the artifact a 'base name' (The version is added to the 'base name')
         pom.artifactId = project.artifactId
     }
-}
-
-repositories {
-    if (project.hasProperty('local')) {
-            mavenLocal()
-        }
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-        maven { url 'http://repository.activeeon.com/content/groups/proactive/'}
 }
 
 configurations {

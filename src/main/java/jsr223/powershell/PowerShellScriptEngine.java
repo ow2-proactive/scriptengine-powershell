@@ -1,18 +1,32 @@
+/*
+ * ProActive Parallel Suite(TM):
+ * The Open Source library for parallel and distributed
+ * Workflows & Scheduling, Orchestration, Cloud Automation
+ * and Big Data Analysis on Enterprise Grids & Clouds.
+ *
+ * Copyright (c) 2007 - 2017 ActiveEon
+ * Contact: contact@activeeon.com
+ *
+ * This library is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation: version 3 of
+ * the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ */
 package jsr223.powershell;
 
-import net.sf.jni4net.Bridge;
-import system.EventArgs;
-import system.EventHandler;
-import system.collections.IEnumerable;
-import system.collections.IEnumerator;
-import system.collections.IList;
+import static jsr223.powershell.CSharpJavaConverter.convertCSharpObjectToJavaObject;
 
-import javax.script.AbstractScriptEngine;
-import javax.script.Bindings;
-import javax.script.ScriptContext;
-import javax.script.ScriptEngineFactory;
-import javax.script.ScriptException;
-import javax.script.SimpleBindings;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -27,7 +41,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static jsr223.powershell.CSharpJavaConverter.convertCSharpObjectToJavaObject;
+import javax.script.AbstractScriptEngine;
+import javax.script.Bindings;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngineFactory;
+import javax.script.ScriptException;
+import javax.script.SimpleBindings;
 
 import org.apache.commons.io.IOUtils;
 import org.ow2.proactive.scheduler.common.SchedulerConstants;
@@ -35,6 +54,13 @@ import org.ow2.proactive.scheduler.common.task.flow.FlowScript;
 import org.ow2.proactive.scheduler.task.utils.VariablesMap;
 import org.ow2.proactive.scripting.SelectionScript;
 import org.ow2.proactive.scripting.TaskScript;
+
+import net.sf.jni4net.Bridge;
+import system.EventArgs;
+import system.EventHandler;
+import system.collections.IEnumerable;
+import system.collections.IEnumerator;
+import system.collections.IList;
 
 
 public class PowerShellScriptEngine extends AbstractScriptEngine {
@@ -114,6 +140,7 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
         readBindingFromPowerShellContext(psCaller, ps, context, FlowScript.loopVariable);
         updateVariableBindings(psCaller, ps, context, SchedulerConstants.VARIABLES_BINDING_NAME);
         updateVariableBindings(psCaller, ps, context, SchedulerConstants.RESULT_METADATA_VARIABLE);
+        updateVariableBindings(psCaller, ps, context, SchedulerConstants.RESULT_MAP_BINDING_NAME);
     }
 
     private void updateVariableBindings(PowerShellCachedCaller psCaller, system.Object ps, ScriptContext context,
@@ -123,7 +150,8 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
             Map variablesMapFromScheduler = (Map) variablesFromScheduler;
             Object convertedVariablesFromScript = convertCSharpObjectToJavaObject(psCaller,
                                                                                   psCaller.getVariables(ps,
-                                                                                                        bindingName));
+                                                                                                        bindingName),
+                                                                                  false);
             if (convertedVariablesFromScript instanceof VariablesMap) {
                 Map<String, Serializable> scriptVariableMap = ((VariablesMap) convertedVariablesFromScript).getScriptMap();
                 Map<String, Serializable> filteredScriptVariableMap = filterUnconvertibleVariables(scriptVariableMap);
@@ -151,7 +179,7 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
 
     private void readBindingFromPowerShellContext(PowerShellCachedCaller psCaller, system.Object ps,
             ScriptContext context, String bindingName) {
-        Object binding = convertCSharpObjectToJavaObject(psCaller, psCaller.getVariables(ps, bindingName));
+        Object binding = convertCSharpObjectToJavaObject(psCaller, psCaller.getVariables(ps, bindingName), false);
         if (binding != null) {
             context.setAttribute(bindingName, binding, ScriptContext.ENGINE_SCOPE);
         }
@@ -169,7 +197,7 @@ public class PowerShellScriptEngine extends AbstractScriptEngine {
                 } catch (Exception e) {
                     scriptResultObject = scriptResult;
                 }
-                Object javaScriptResult = convertCSharpObjectToJavaObject(psCaller, scriptResultObject);
+                Object javaScriptResult = convertCSharpObjectToJavaObject(psCaller, scriptResultObject, true);
                 resultAsList.add(javaScriptResult);
             }
         }
