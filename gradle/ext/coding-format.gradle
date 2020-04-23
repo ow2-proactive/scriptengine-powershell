@@ -1,0 +1,48 @@
+apply plugin: 'com.diffplug.gradle.spotless'
+
+spotless {
+    java {
+        target project.fileTree(project.rootDir) {
+            include '**/*.java'
+            exclude '**/package-info.java'
+            exclude '**/proactive.license.java'
+            exclude '.gradle/**/*.java'
+            exclude '**/generated/'
+            exclude '**/node_modules/'
+	    exclude '**/bower_components/'
+        }
+
+        licenseHeaderFile   "$rootDir/gradle/ext/proactive.license.java"  // License header file
+
+        importOrderFile     "$rootDir/gradle/ext/proactive.importorder"     // An import ordering file, exported from Eclipse
+
+        eclipseFormatFile   "$rootDir/gradle/ext/ProactiveCodeFormatter.xml"    // XML file dumped out by the Eclipse formatter
+
+        // Eclipse formatter puts excess whitespace after lambda blocks
+        //    funcThatTakesLambdas(x -> {} , y -> {} )  // what Eclipse does
+        //    funcThatTakesLambdas(x -> {}, y -> {})    // what I wish Eclipse did
+        custom 'Lambda fix', { it.replace('} )', '})').replace('} ,', '},') }
+
+        paddedCell()
+    }
+
+    format 'misc', {
+        target project.fileTree(project.rootDir) {
+            include '**/.gitignore'
+            include '**/*.gradle'
+            include '**/*.md'
+            include '**/*.sh'
+            exclude 'gradle/ext'
+            exclude 'build/nodejs'
+            exclude '**/node_modules/'
+	    exclude '**/bower_components/'
+        }
+        indentWithSpaces()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+task formatCode(type: GradleBuild) {
+    tasks = ['spotlessApply']
+}
