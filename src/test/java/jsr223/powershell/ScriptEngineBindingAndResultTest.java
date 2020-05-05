@@ -42,6 +42,7 @@ import javax.xml.crypto.Data;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.ow2.proactive.core.properties.PropertyDecrypter;
 import org.ow2.proactive.scheduler.common.SchedulerConstants;
 import org.ow2.proactive.scheduler.common.job.TaskFlowJob;
 import org.ow2.proactive.scheduler.task.utils.VariablesMap;
@@ -185,6 +186,8 @@ public class ScriptEngineBindingAndResultTest {
         // and that the original java binding is preserved after the script execution
         VariablesMap map = new VariablesMap();
         map.getScopeMap().put("scopeVar", "value");
+        map.getScopeMap().put("pwd", PropertyDecrypter.encryptData("password"));
+        map.getInheritedMap().put("pwd2", PropertyDecrypter.encryptData("password"));
         // we use a TaskFlowJob as a non-convertible object
         TaskFlowJob job = new TaskFlowJob();
         map.getInheritedMap().put("unconvertible", job);
@@ -213,6 +216,15 @@ public class ScriptEngineBindingAndResultTest {
         Assert.assertTrue(((String) unconvertibleVariable).startsWith(CSharpJavaConverter.NOT_SUPPORTED_JAVA_OBJECT));
         Assert.assertEquals(job, map.getPropagatedVariables().get("unconvertible"));
         System.out.println(map);
+
+        Object encryptedVariable = scriptEngine.eval("$" + SchedulerConstants.VARIABLES_BINDING_NAME +
+                                                     ".Get_Item('pwd')");
+        Assert.assertTrue(scopeVariable instanceof String);
+        Assert.assertEquals("password", encryptedVariable);
+
+        encryptedVariable = scriptEngine.eval("$" + SchedulerConstants.VARIABLES_BINDING_NAME + ".Get_Item('pwd2')");
+        Assert.assertTrue(scopeVariable instanceof String);
+        Assert.assertEquals("password", encryptedVariable);
     }
 
 }
