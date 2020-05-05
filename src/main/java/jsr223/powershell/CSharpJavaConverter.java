@@ -100,8 +100,10 @@ public class CSharpJavaConverter {
             return cSharpList;
         } else if (bindingValue instanceof VariablesMap) {
             VariablesMap variablesMapBinding = (VariablesMap) bindingValue;
-            return psCaller.createVariablesMap(convertMap(psCaller, variablesMapBinding.getInheritedMap()),
-                                               convertMap(psCaller, convertScopeMap(variablesMapBinding)),
+            return psCaller.createVariablesMap(convertMap(psCaller,
+                                                          convertVariableMap(variablesMapBinding.getInheritedMap())),
+                                               convertMap(psCaller,
+                                                          convertVariableMap(variablesMapBinding.getScopeMap())),
                                                convertMap(psCaller, variablesMapBinding.getScriptMap()));
         } else if (bindingValue instanceof Map) {
             return convertMap(psCaller, (Map) bindingValue);
@@ -124,15 +126,13 @@ public class CSharpJavaConverter {
         return null;
     }
 
-    private static Map<String, Serializable> convertScopeMap(VariablesMap variablesMapBinding) {
-        Map<String, Serializable> scopeMap = variablesMapBinding.getScopeMap();
+    private static Map<String, Serializable> convertVariableMap(Map<String, Serializable> variableMap) {
         Map<String, Serializable> convertedScopeMap = new LinkedHashMap<>();
-        for (Map.Entry<String, Serializable> entry : scopeMap.entrySet()) {
+        for (Map.Entry<String, Serializable> entry : variableMap.entrySet()) {
             Serializable value = entry.getValue();
             if (value != null && value instanceof String && value.toString().startsWith("ENC(")) {
-                String encryptedValue = ((String) value).substring(4, ((String) value).length() - 1);
                 // if the value is encrypted, use the variables map global get method to decrypt it
-                convertedScopeMap.put(entry.getKey(), PropertyDecrypter.getDefaultEncryptor().decrypt(encryptedValue));
+                convertedScopeMap.put(entry.getKey(), PropertyDecrypter.decryptData((String) value));
             } else {
                 convertedScopeMap.put(entry.getKey(), entry.getValue());
             }
