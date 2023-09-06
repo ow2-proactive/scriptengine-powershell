@@ -15,11 +15,14 @@ buildscript {
         if (project.hasProperty('local')) {
             mavenLocal()
         }
-        jcenter()
+        mavenCentral()
         maven {
             url "https://plugins.gradle.org/m2/"
         }
         maven { url 'http://repository.activeeon.com/content/groups/proactive/' }
+        maven {
+            url "https://repo.jenkins-ci.org/releases/"
+        }
     }
 
     dependencies {
@@ -96,7 +99,7 @@ dependencies {
     nativeLib files("${projectDir}/tools/jsr223utils.dll")
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile 'com.google.guava:guava:19.0'
+    testCompile 'com.google.guava:guava:32.0.1-jre'
 }
 
 task nativeLibJar(type: Jar) {
